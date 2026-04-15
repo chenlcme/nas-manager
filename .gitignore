@@ -1,0 +1,37 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+nas-manager
+nas-manager-*
+
+# Test binary
+*.test
+
+# Output of go coverage
+*.out
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+dist/
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
