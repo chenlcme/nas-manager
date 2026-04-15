@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>极客工具箱 - 设计方向探索</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#22C55E',
+            secondary: '#3B82F6',
+            accent: '#F97316',
+            success: '#22C55E',
+            warning: '#EAB308',
+            error: '#EF4444',
+          },
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans SC', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+          </svg>
+        </div>
+        <span class="font-semibold text-gray-900">极客工具箱</span>
+      </div>
+      <nav class="flex items-center gap-4 text-sm">
+        <a href="#" class="text-gray-500 hover:text-gray-900">浏览</a>
+        <a href="#" class="text-gray-500 hover:text-gray-900">设置</a>
+        <div class="w-8 h-8 bg-gray-200 rounded-full"></div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8">
+    <div class="text-center mb-12">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">设计方向探索</h1>
+      <p class="text-gray-600">探索不同的视觉设计方向，找到最适合极客工具箱的风格</p>
+    </div>
+
+    <!-- Direction 1: 经典简洁 -->
+    <section class="mb-16">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <span class="w-6 h-6 bg-primary text-white rounded-full text-sm flex items-center justify-center">1</span>
+        经典简洁 — 左侧导航 + 右侧内容
+      </h2>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="flex h-[500px]">
+          <!-- Left Sidebar -->
+          <aside class="w-56 bg-gray-50 border-r border-gray-200 p-4">
+            <div class="mb-6">
+              <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">音乐库</h3>
+              <ul class="space-y-1">
+                <li class="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                  歌手
+                </li>
+                <li class="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6253.253a.996.996 0 00-1 0L3 8l1.265 3.373A1 1 0 005.263 12h13.474a1 1 0 00.998-.627L21 8l-8-3.747a.996.996 0 00-1 0z"/></svg>
+                  专辑
+                </li>
+                <li class="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                  文件夹
+                </li>
+              </ul>
+            </div>
+            <div class="mb-6">
+              <h3 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">搜索</h3>
+              <div class="relative">
+                <input type="text" placeholder="搜索歌曲..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                <button class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </button>
+              </div>
+            </div>
+          </aside>
+          <!-- Main Content -->
+          <div class="flex-1 flex flex-col">
+            <!-- Toolbar -->
+            <div class="px-6 py-3 border-b border-gray-100 flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <h2 class="font-semibold text-gray-900">周杰伦</h2>
+                <span class="text-sm text-gray-500">156 首歌曲</span>
+              </div>
+              <button class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+                扫描音乐
+              </button>
+            </div>
+            <!-- Song List -->
+            <div class="flex-1 overflow-auto p-6">
+              <div class="space-y-2">
+                <!-- Selected Song -->
+                <div class="flex items-center gap-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <input type="checkbox" checked class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                  <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-blue-500 rounded flex-shrink-0"></div>
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-gray-900 truncate">晴天</div>
+                    <div class="text-sm text-gray-500 truncate">叶惠美 · 2003</div>
+                  </div>
+                  <div class="text-sm text-gray-400">4:29</div>
+                  <button class="p-1.5 text-gray-400 hover:text-gray-600 rounded">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                  </button>
+                </div>
+                <!-- Unselected Songs -->
+                <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50">
+                  <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                  <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-cyan-500 rounded flex-shrink-0"></div>
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-gray-900 truncate">七里香</div>
+                    <div class="text-sm text-gray-500 truncate">七里香 · 2004</div>
+                  </div>
+                  <div class="text-sm text-gray-400">4:59</div>
+                  <button class="p-1.5 text-gray-400 hover:text-gray-600 rounded">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                  </button>
+                </div>
+                <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50">
+                  <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                  <div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded flex-shrink-0"></div>
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-gray-900 truncate">夜曲</div>
+                    <div class="text-sm text-gray-500 truncate">十一月的萧邦 · 2005</div>
+                  </div>
+                  <div class="text-sm text-gray-400">4:33</div>
+                  <button class="p-1.5 text-gray-400 hover:text-gray-600 rounded">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <!-- Floating Action Bar -->
+            <div class="px-6 py-3 bg-white border-t border-gray-200 flex items-center justify-between">
+              <div class="flex items-center gap-2 text-sm text-gray-600">
+                <span class="px-2 py-1 bg-primary/10 text-primary rounded font-medium">已选中 1 首</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">
+                  设置专辑
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mt-3 text-sm text-gray-600">特点：经典左侧导航布局，适合多内容类型的应用，切换视图方便</p>
+    </section>
+
+    <!-- Direction 2: 沉浸式内容 -->
+    <section class="mb-16">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <span class="w-6 h-6 bg-secondary text-white rounded-full text-sm flex items-center justify-center">2</span>
+        沉浸式内容 — 顶部Tab + 全宽内容
+      </h2>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="h-[500px] flex flex-col">
+          <!-- Top Navigation -->
+          <div class="px-6 py-4 border-b border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                  </svg>
+                </div>
+                <span class="font-semibold text-gray-900">极客工具箱</span>
+              </div>
+              <div class="flex items-center gap-4">
+                <div class="relative">
+                  <input type="text" placeholder="搜索歌曲、歌手..." class="w-64 pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary">
+                  <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+              </div>
+            </div>
+            <!-- Tabs -->
+            <div class="flex items-center gap-6 border-b border-gray-100 -mb-4">
+              <button class="pb-3 px-1 text-sm font-medium text-secondary border-b-2 border-secondary">歌手</button>
+              <button class="pb-3 px-1 text-sm font-medium text-gray-500 hover:text-gray-700">专辑</button>
+              <button class="pb-3 px-1 text-sm font-medium text-gray-500 hover:text-gray-700">文件夹</button>
+            </div>
+          </div>
+          <!-- Content -->
+          <div class="flex-1 overflow-auto p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">周杰伦 <span class="text-sm font-normal text-gray-500">156 首</span></h3>
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Song Card -->
+              <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/5 border border-secondary/20">
+                <input type="checkbox" checked class="w-4 h-4 rounded border-gray-300 text-secondary focus:ring-secondary">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-gray-900 truncate">晴天</div>
+                  <div class="text-sm text-gray-500">叶惠美 · 4:29</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50">
+                <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-secondary focus:ring-secondary">
+                <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-cyan-500 rounded-lg flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-gray-900 truncate">七里香</div>
+                  <div class="text-sm text-gray-500">七里香 · 4:59</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50">
+                <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-secondary focus:ring-secondary">
+                <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-gray-900 truncate">夜曲</div>
+                  <div class="text-sm text-gray-500">十一月的萧邦 · 4:33</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50">
+                <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-secondary focus:ring-secondary">
+                <div class="w-12 h-12 bg-gradient-to-br from-pink-400 to-rose-500 rounded-lg flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-gray-900 truncate">稻香</div>
+                  <div class="text-sm text-gray-500">魔杰座 · 3:43</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Bottom Action -->
+          <div class="px-6 py-4 bg-gradient-to-t from-white to-transparent border-t border-gray-100 flex items-center justify-between">
+            <span class="text-sm text-gray-600">已选择 <span class="font-semibold text-secondary">1</span> 首歌曲</span>
+            <button class="px-5 py-2.5 bg-secondary text-white rounded-lg text-sm font-medium shadow-lg shadow-secondary/30">
+              设置专辑
+            </button>
+          </div>
+        </div>
+      </div>
+      <p class="mt-3 text-sm text-gray-600">特点：顶部Tab导航，全宽内容展示，视觉更沉浸，批量操作更突出</p>
+    </section>
+
+    <!-- Direction 3: 紧凑高效 -->
+    <section class="mb-16">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <span class="w-6 h-6 bg-accent text-white rounded-full text-sm flex items-center justify-center">3</span>
+        紧凑高效 — 高密度信息展示
+      </h2>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="h-[500px] flex flex-col">
+          <!-- Compact Header -->
+          <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center justify-between text-sm">
+            <div class="flex items-center gap-4">
+              <span class="font-medium text-gray-900">周杰伦</span>
+              <span class="text-gray-500">156 首</span>
+              <span class="text-gray-400">|</span>
+              <span class="text-gray-500">已选 1 首</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="px-3 py-1 text-xs bg-accent text-white rounded">设置专辑</button>
+              <button class="px-3 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50">扫描</button>
+            </div>
+          </div>
+          <!-- Filter Bar -->
+          <div class="px-4 py-2 border-b border-gray-100 flex items-center gap-3">
+            <div class="relative flex-1 max-w-xs">
+              <input type="text" placeholder="搜索..." class="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
+              <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <div class="flex items-center gap-1 text-xs text-gray-500">
+              <button class="px-2 py-1 bg-gray-100 rounded">歌手</button>
+              <button class="px-2 py-1 hover:bg-gray-100 rounded">专辑</button>
+              <button class="px-2 py-1 hover:bg-gray-100 rounded">文件夹</button>
+            </div>
+          </div>
+          <!-- Dense List -->
+          <div class="flex-1 overflow-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 sticky top-0">
+                <tr class="text-left text-xs text-gray-500 uppercase">
+                  <th class="w-8 px-3 py-2"><input type="checkbox" class="rounded border-gray-300 text-accent focus:ring-accent"></th>
+                  <th class="px-3 py-2 w-10"></th>
+                  <th class="px-3 py-2">标题</th>
+                  <th class="px-3 py-2">专辑</th>
+                  <th class="px-3 py-2 w-16">时长</th>
+                  <th class="px-3 py-2 w-10"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-50">
+                <tr class="bg-accent/5">
+                  <td class="px-3 py-2"><input type="checkbox" checked class="rounded border-gray-300 text-accent focus:ring-accent"></td>
+                  <td class="px-3 py-2"><div class="w-6 h-6 bg-gradient-to-br from-purple-400 to-blue-500 rounded"></div></td>
+                  <td class="px-3 py-2 font-medium text-gray-900">晴天</td>
+                  <td class="px-3 py-2 text-gray-600">叶惠美</td>
+                  <td class="px-3 py-2 text-gray-500">4:29</td>
+                  <td class="px-3 py-2"><button class="text-gray-400 hover:text-gray-600">···</button></td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-3 py-2"><input type="checkbox" class="rounded border-gray-300 text-accent focus:ring-accent"></td>
+                  <td class="px-3 py-2"><div class="w-6 h-6 bg-gradient-to-br from-green-400 to-cyan-500 rounded"></div></td>
+                  <td class="px-3 py-2 font-medium text-gray-900">七里香</td>
+                  <td class="px-3 py-2 text-gray-600">七里香</td>
+                  <td class="px-3 py-2 text-gray-500">4:59</td>
+                  <td class="px-3 py-2"><button class="text-gray-400 hover:text-gray-600">···</button></td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-3 py-2"><input type="checkbox" class="rounded border-gray-300 text-accent focus:ring-accent"></td>
+                  <td class="px-3 py-2"><div class="w-6 h-6 bg-gradient-to-br from-orange-400 to-red-500 rounded"></div></td>
+                  <td class="px-3 py-2 font-medium text-gray-900">夜曲</td>
+                  <td class="px-3 py-2 text-gray-600">十一月的萧邦</td>
+                  <td class="px-3 py-2 text-gray-500">4:33</td>
+                  <td class="px-3 py-2"><button class="text-gray-400 hover:text-gray-600">···</button></td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-3 py-2"><input type="checkbox" class="rounded border-gray-300 text-accent focus:ring-accent"></td>
+                  <td class="px-3 py-2"><div class="w-6 h-6 bg-gradient-to-br from-pink-400 to-rose-500 rounded"></div></td>
+                  <td class="px-3 py-2 font-medium text-gray-900">稻香</td>
+                  <td class="px-3 py-2 text-gray-600">魔杰座</td>
+                  <td class="px-3 py-2 text-gray-500">3:43</td>
+                  <td class="px-3 py-2"><button class="text-gray-400 hover:text-gray-600">···</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p class="mt-3 text-sm text-gray-600">特点：高密度信息表格视图，单屏显示更多内容，适合大量歌曲管理</p>
+    </section>
+
+    <!-- Direction 4: 卡片网格 -->
+    <section class="mb-16">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <span class="w-6 h-6 bg-primary text-white rounded-full text-sm flex items-center justify-center">4</span>
+        卡片网格 — 视觉化展示
+      </h2>
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="h-[500px] flex flex-col">
+          <!-- Header -->
+          <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900">周杰伦的歌曲</h2>
+              <p class="text-sm text-gray-500">156 首 · 已选择 1 首</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="p-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+              </button>
+              <button class="p-2 bg-primary/10 text-primary rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+              </button>
+            </div>
+          </div>
+          <!-- Card Grid -->
+          <div class="flex-1 overflow-auto p-6">
+            <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <!-- Selected Card -->
+              <div class="relative p-4 rounded-xl bg-primary/5 border-2 border-primary">
+                <div class="absolute top-2 right-2">
+                  <div class="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                </div>
+                <div class="aspect-square bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg mb-3"></div>
+                <h3 class="font-medium text-gray-900 truncate">晴天</h3>
+                <p class="text-sm text-gray-500 truncate">叶惠美</p>
+                <p class="text-xs text-gray-400 mt-1">4:29</p>
+              </div>
+              <!-- Unselected Cards -->
+              <div class="p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                <div class="aspect-square bg-gradient-to-br from-green-400 to-cyan-500 rounded-lg mb-3"></div>
+                <h3 class="font-medium text-gray-900 truncate">七里香</h3>
+                <p class="text-sm text-gray-500 truncate">七里香</p>
+                <p class="text-xs text-gray-400 mt-1">4:59</p>
+              </div>
+              <div class="p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                <div class="aspect-square bg-gradient-to-br from-orange-400 to-red-500 rounded-lg mb-3"></div>
+                <h3 class="font-medium text-gray-900 truncate">夜曲</h3>
+                <p class="text-sm text-gray-500 truncate">十一月的萧邦</p>
+                <p class="text-xs text-gray-400 mt-1">4:33</p>
+              </div>
+              <div class="p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
+                <div class="aspect-square bg-gradient-to-br from-pink-400 to-rose-500 rounded-lg mb-3"></div>
+                <h3 class="font-medium text-gray-900 truncate">稻香</h3>
+                <p class="text-sm text-gray-500 truncate">魔杰座</p>
+                <p class="text-xs text-gray-400 mt-1">3:43</p>
+              </div>
+            </div>
+          </div>
+          <!-- Action Bar -->
+          <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+            <button class="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium shadow-lg shadow-primary/30">
+              设置专辑
+            </button>
+            <button class="text-sm text-gray-500 hover:text-gray-700">取消选择</button>
+          </div>
+        </div>
+      </div>
+      <p class="mt-3 text-sm text-gray-600">特点：卡片网格展示，视觉更丰富，适合触摸操作，移动端友好</p>
+    </section>
+
+    <!-- Selection Summary -->
+    <section class="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl p-8 text-center">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">你喜欢哪种设计方向？</h2>
+      <p class="text-gray-600 mb-6">每个方向都有其特点，选择最符合你对极客工具箱期望的风格</p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm">
+          <span class="w-3 h-3 bg-primary rounded-full"></span>
+          <span class="text-sm font-medium">方向1: 经典简洁</span>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm">
+          <span class="w-3 h-3 bg-secondary rounded-full"></span>
+          <span class="text-sm font-medium">方向2: 沉浸式内容</span>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm">
+          <span class="w-3 h-3 bg-accent rounded-full"></span>
+          <span class="text-sm font-medium">方向3: 紧凑高效</span>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm">
+          <span class="w-3 h-3 bg-primary rounded-full"></span>
+          <span class="text-sm font-medium">方向4: 卡片网格</span>
+        </div>
+      </div>
+      <div class="mt-6 text-sm text-gray-500">
+        或者告诉我你想要的组合：比如「方向1的导航 + 方向2的颜色」
+      </div>
+    </section>
+  </main>
+</body>
+</html>
