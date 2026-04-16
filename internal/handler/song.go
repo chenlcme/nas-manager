@@ -79,6 +79,47 @@ func (h *SongHandler) GetSong(c *gin.Context) {
 	response.Success(c, song)
 }
 
+// GetSongs - 批量获取歌曲详情
+// POST /api/songs/batch-get
+func (h *SongHandler) GetSongs(c *gin.Context) {
+	start := time.Now()
+
+	var req struct {
+		IDs []uint `json:"ids" binding:"required,min=1,max=100"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("[SongHandler] GetSongs invalid request: %v", err)
+		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "无效的请求参数")
+		return
+	}
+
+	log.Printf("[SongHandler] GetSongs count=%d", len(req.IDs))
+
+	// Deduplicate IDs
+	seen := make(map[uint]bool)
+	uniqueIDs := make([]uint, 0, len(req.IDs))
+	for _, id := range req.IDs {
+		if !seen[id] {
+			seen[id] = true
+			uniqueIDs = append(uniqueIDs, id)
+		}
+	}
+
+	// Fetch songs
+	songs := make([]model.Song, 0, len(uniqueIDs))
+	for _, id := range uniqueIDs {
+		song, err := h.songRepo.GetByID(id)
+		if err != nil {
+			continue // Skip songs that can't be found
+		}
+		songs = append(songs, *song)
+	}
+
+	log.Printf("[SongHandler] GetSongs found=%d duration=%v", len(songs), time.Since(start))
+	response.Success(c, songs)
+}
+
 // DeleteSongs - 批量删除歌曲
 // POST /api/songs/delete
 func (h *SongHandler) DeleteSongs(c *gin.Context) {
@@ -320,4 +361,147 @@ func (h *SongHandler) SearchSongsByTag(c *gin.Context) {
 
 	log.Printf("[SongHandler] SearchSongsByTag keyword=%s found=%d duration=%v", keyword, len(songs), time.Since(start))
 	response.Success(c, songs)
+}
+
+// UpdateSong - 更新歌曲信息
+// PUT /api/songs/:id
+func (h *SongHandler) UpdateSong(c *gin.Context) {
+	start := time.Now()
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		log.Printf("[SongHandler] UpdateSong invalid ID: %s, error: %v", idStr, err)
+		response.Error(c, http.StatusBadRequest, "INVALID_SONG_ID", "无效的歌曲ID")
+		return
+	}
+
+	log.Printf("[SongHandler] UpdateSong id=%d", id)
+
+	// Get existing song
+	song, err := h.songRepo.GetByID(uint(id))
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			log.Printf("[SongHandler] UpdateSong song not found: id=%d", id)
+			response.Error(c, http.StatusNotFound, "SONG_NOT_FOUND", "歌曲不存在")
+			return
+		}
+		log.Printf("[SongHandler] UpdateSong DB error for id=%d: %v", id, err)
+		response.Error(c, http.StatusInternalServerError, "DB_ERROR", "数据库错误")
+		return
+	}
+
+	// Parse update request
+	var req struct {
+		Title     *string `json:"title"`
+		Artist    *string `json:"artist"`
+		Album     *string `json:"album"`
+		Year      *int    `json:"year"`
+		Genre     *string `json:"genre"`
+		TrackNum  *int    `json:"trackNum"`
+		CoverPath *string `json:"coverPath"`
+		Lyrics    *string `json:"lyrics"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("[SongHandler] UpdateSong invalid request: %v", err)
+		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "无效的请求参数")
+		return
+	}
+
+	// Update fields if provided (nil means don't update)
+	if req.Title != nil {
+		song.Title = *req.Title
+	}
+	if req.Artist != nil {
+		song.Artist = *req.Artist
+	}
+	if req.Album != nil {
+		song.Album = *req.Album
+	}
+	if req.Year != nil {
+		song.Year = *req.Year
+	}
+	if req.Genre != nil {
+		song.Genre = *req.Genre
+	}
+	if req.TrackNum != nil {
+		song.TrackNum = *req.TrackNum
+	}
+	if req.CoverPath != nil {
+		song.CoverPath = *req.CoverPath
+	}
+	if req.Lyrics != nil {
+		song.Lyrics = *req.Lyrics
+	}
+
+	// Save updates
+	if err := h.songRepo.Update(song); err != nil {
+		log.Printf("[SongHandler] UpdateSong failed to update id=%d: %v", id, err)
+		response.Error(c, http.StatusInternalServerError, "UPDATE_FAILED", "更新失败")
+		return
+	}
+
+	log.Printf("[SongHandler] UpdateSong id=%d success, duration=%v", id, time.Since(start))
+	response.Success(c, song)
+}
+
+// StreamSong - 流式播放歌曲
+// GET /api/songs/:id/stream
+func (h *SongHandler) StreamSong(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		log.Printf("[SongHandler] StreamSong invalid ID: %s, error: %v", idStr, err)
+		response.Error(c, http.StatusBadRequest, "INVALID_SONG_ID", "无效的歌曲ID")
+		return
+	}
+
+	log.Printf("[SongHandler] StreamSong id=%d", id)
+
+	// Get song to find file path
+	song, err := h.songRepo.GetByID(uint(id))
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			log.Printf("[SongHandler] StreamSong song not found: id=%d", id)
+			response.Error(c, http.StatusNotFound, "SONG_NOT_FOUND", "歌曲不存在")
+			return
+		}
+		log.Printf("[SongHandler] StreamSong DB error for id=%d: %v", id, err)
+		response.Error(c, http.StatusInternalServerError, "DB_ERROR", "数据库错误")
+		return
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(song.FilePath); os.IsNotExist(err) {
+		log.Printf("[SongHandler] StreamSong file not found: %s", song.FilePath)
+		response.Error(c, http.StatusNotFound, "FILE_NOT_FOUND", "文件不存在")
+		return
+	}
+
+	// Determine content type based on file extension
+	ext := strings.ToLower(filepath.Ext(song.FilePath))
+	var contentType string
+	switch ext {
+	case ".mp3":
+		contentType = "audio/mpeg"
+	case ".flac":
+		contentType = "audio/flac"
+	case ".ogg":
+		contentType = "audio/ogg"
+	case ".m4a", ".aac":
+		contentType = "audio/mp4"
+	case ".wav":
+		contentType = "audio/wav"
+	case ".ape":
+		contentType = "audio/ape"
+	default:
+		contentType = "audio/mpeg"
+	}
+
+	// Set headers for streaming
+	c.Header("Content-Type", contentType)
+	c.Header("Accept-Ranges", "bytes")
+
+	// Stream the file
+	c.File(song.FilePath)
 }

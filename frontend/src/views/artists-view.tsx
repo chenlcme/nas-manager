@@ -11,9 +11,10 @@ interface ArtistsViewProps {
   onPlaySong: (song: Song) => void;
   onShowSongDetail: (song: Song) => void;
   onBatchEdit?: () => void;
+  playingSongId?: number | null;
 }
 
-export function ArtistsView({ onPlaySong, onShowSongDetail, onBatchEdit }: ArtistsViewProps) {
+export function ArtistsView({ onPlaySong, onShowSongDetail, onBatchEdit, playingSongId }: ArtistsViewProps) {
   const { selectAll } = useSelection();
   const [artists, setArtists] = useState<ArtistWithCount[]>([]);
   const [expandedArtist, setExpandedArtist] = useState<number | null>(null);
@@ -325,6 +326,7 @@ export function ArtistsView({ onPlaySong, onShowSongDetail, onBatchEdit }: Artis
                                   song={song}
                                   onPlay={onPlaySong}
                                   onShowDetail={onShowSongDetail}
+                                  playingSongId={playingSongId}
                                 />
                               ))}
                             </tbody>

@@ -4,12 +4,15 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 
 	"nas-manager/internal/handler"
 	"nas-manager/internal/model"
+	"nas-manager/pkg/response"
 	"nas-manager/internal/repository"
 	"nas-manager/internal/service"
 
@@ -19,11 +22,13 @@ import (
 )
 
 var (
-	dbPath string
+	dbPath         string
+	frontendDistDir string
 )
 
 func init() {
 	flag.StringVar(&dbPath, "db", "", "SQLite database path")
+	flag.StringVar(&frontendDistDir, "frontend-dist", "", "Frontend dist directory (default: ./frontend/dist)")
 }
 
 func getDefaultDBPath() string {
@@ -75,6 +80,7 @@ func main() {
 	artistRepo := repository.NewArtistRepository(db)
 	albumRepo := repository.NewAlbumRepository(db)
 	folderRepo := repository.NewFolderRepository(db)
+	batchRepo := repository.NewBatchRepository(db)
 
 	// Initialize services
 	settingService := service.NewSettingService(settingRepo)
@@ -90,9 +96,39 @@ func main() {
 	albumHandler := handler.NewAlbumHandler(albumRepo)
 	folderHandler := handler.NewFolderHandler(folderRepo)
 	songHandler := handler.NewSongHandler(songRepo)
+	batchHandler := handler.NewBatchHandler(songRepo, batchRepo)
 
 	// Setup Gin router
 	r := gin.Default()
+
+	// Determine frontend dist directory
+	if frontendDistDir == "" {
+		frontendDistDir = filepath.Join(".", "frontend", "dist")
+	}
+
+	// Serve frontend static files
+	if _, err := os.Stat(frontendDistDir); err == nil {
+		r.GET("/", func(c *gin.Context) {
+			c.File(filepath.Join(frontendDistDir, "index.html"))
+		})
+		r.Static("/assets", filepath.Join(frontendDistDir, "assets"))
+
+		// SPA fallback: serve index.html for non-API routes
+		r.NoRoute(func(c *gin.Context) {
+			path := c.Request.URL.Path
+			if !strings.HasPrefix(path, "/api") {
+				// Check if request is for a static file
+				if strings.HasSuffix(path, ".js") || strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".ico") || strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".jpg") || strings.HasSuffix(path, ".svg") {
+					c.File(filepath.Join(frontendDistDir, path))
+					return
+				}
+				// Otherwise serve index.html for SPA routing
+				c.File(filepath.Join(frontendDistDir, "index.html"))
+			} else {
+				response.Error(c, http.StatusNotFound, "NOT_FOUND", "请求的接口不存在")
+			}
+		})
+	}
 
 	// API routes
 	api := r.Group("/api")
@@ -126,7 +162,13 @@ func main() {
 		api.GET("/songs/search", songHandler.SearchSongs)
 		api.GET("/songs/search/by-tag", songHandler.SearchSongsByTag)
 		api.GET("/songs/:id", songHandler.GetSong)
+		api.PUT("/songs/:id", songHandler.UpdateSong)
+		api.GET("/songs/:id/stream", songHandler.StreamSong)
 		api.POST("/songs/delete", songHandler.DeleteSongs)
+		api.POST("/songs/batch-get", songHandler.GetSongs)
+		api.POST("/songs/batch-update", batchHandler.BatchUpdate)
+		api.POST("/songs/undo/:batchId", batchHandler.UndoBatch)
+		api.GET("/batches/latest", batchHandler.GetLatestBatch)
 	}
 
 	fmt.Println("nas-manager server starting on :8080...")

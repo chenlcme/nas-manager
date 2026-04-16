@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-16T00:12:00Z
-last_updated: 2026-04-16T12:00:00Z
+last_updated: 2026-04-16T14:30:00Z
 project: nas-manager
 project_key: NOKEY
 tracking_system: file-system
@@ -67,19 +67,19 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: 播放器与现场编辑
-  epic-3: backlog
-  3-0-sqlite-connection-pool: backlog
-  3-1-play-selected-music: backlog
-  3-2-display-album-cover: backlog
-  3-3-display-lyrics: backlog
-  3-4-display-playback-time: backlog
-  3-5-edit-metadata-during-playback: backlog
+  epic-3: done
+  3-0-sqlite-connection-pool-fix: done
+  3-1-play-selected-music: done
+  3-2-display-album-cover: done
+  3-3-display-lyrics: done
+  3-4-display-play-time: done
+  3-5-edit-metadata-during-playback: done
   epic-3-retrospective: optional
 
   # Epic 4: 批量编辑与撤销
-  epic-4: backlog
-  4-1-batch-modify-tags: backlog
-  4-2-batch-modify-cover: backlog
-  4-3-search-and-batch-apply-lyrics: backlog
-  4-4-undo-batch-edit: backlog
+  epic-4: done
+  4-1-batch-modify-tags: done
+  4-2-batch-modify-cover: done
+  4-3-search-and-batch-apply-lyrics: done
+  4-4-undo-batch-editing: done
   epic-4-retrospective: optional

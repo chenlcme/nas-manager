@@ -7,6 +7,7 @@ interface SongTableRowProps {
   onShowDetail?: (song: Song) => void;
   showPath?: boolean; // 显示文件路径（用于文件夹视图）
   highlightedText?: string | preact.JSX.Element; // 高亮文本（用于搜索结果）
+  playingSongId?: number | null; // 当前播放的歌曲ID
 }
 
 // 格式化时长 (秒 -> mm:ss)
@@ -16,15 +17,17 @@ function formatDuration(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function SongTableRow({ song, onPlay, onShowDetail, showPath, highlightedText }: SongTableRowProps) {
+export function SongTableRow({ song, onPlay, onShowDetail, showPath, highlightedText, playingSongId }: SongTableRowProps) {
   const { isSelected, toggle } = useSelection();
   const selected = isSelected(song.id);
+  const isPlaying = playingSongId === song.id;
 
   return (
     <tr
       class={{
         'border-b border-gray-100 hover:bg-gray-50': true,
         'bg-green-50': selected,
+        'bg-green-100': isPlaying,
       }}
     >
       {/* 复选框 */}
@@ -96,13 +99,19 @@ export function SongTableRow({ song, onPlay, onShowDetail, showPath, highlighted
         <div class="flex items-center gap-1">
           <button
             onClick={() => onPlay(song)}
-            class="p-2 rounded text-gray-400 hover:text-white hover:bg-green-500 transition-colors"
-            title="播放"
-            aria-label="播放歌曲"
+            class={`p-2 rounded transition-colors ${isPlaying ? 'text-green-500' : 'text-gray-400 hover:text-white hover:bg-green-500'}`}
+            title={isPlaying ? "播放中" : "播放"}
+            aria-label={isPlaying ? "播放中" : "播放歌曲"}
           >
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
+            {isPlaying ? (
+              <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 3v9.28a4.39 4.39 0 0 0-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.72 4.45-3.94.57-.3 1.05-.75 1.05-1.78V6h4V3h-8z"/>
+              </svg>
+            ) : (
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            )}
           </button>
           {onShowDetail && (
             <button

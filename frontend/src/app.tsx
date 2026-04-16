@@ -7,6 +7,8 @@ import { SearchResultsView } from './views/search-results-view';
 import { TabNav } from './components/common/tab-nav';
 import { SearchBar, SearchType } from './components/common/search-bar';
 import { SongDetailPanel } from './components/song/song-detail-panel';
+import { SidePlayer } from './components/player/side-player';
+import { SideEditPanel } from './components/edit/side-edit-panel';
 import { SelectionProvider } from './contexts/selection-context';
 import { Song } from './types/song';
 
@@ -31,17 +33,19 @@ export function App() {
   const [activeTab, setActiveTab] = useState<Tab>('artists');
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
-  const [showBatchEdit, setShowBatchEdit] = useState(false);
   const [detailSong, setDetailSong] = useState<Song | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchType, setSearchType] = useState<SearchType>('tag');
   const [searchLoading, setSearchLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const toastIdRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
   const fetchSongIdRef = useRef<number | null>(null);
   const toastTimeoutRefs = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [showEditPanel, setShowEditPanel] = useState(false);
 
   // 检查设置状态
   useEffect(() => {
@@ -77,12 +81,15 @@ export function App() {
 
   function handlePlaySong(song: Song) {
     setCurrentSong(song);
-    // 播放器功能将在 Epic 3 中实现
+    setShowPlayer(true);
+  }
+
+  function handleClosePlayer() {
+    setShowPlayer(false);
   }
 
   function handleBatchEdit() {
-    setShowBatchEdit(true);
-    // 批量编辑功能将在 Epic 4 中实现
+    setShowEditPanel(true);
   }
 
   function handleShowSongDetail(song: Song) {
@@ -168,6 +175,25 @@ export function App() {
     setSearchLoading(false);
   }
 
+  async function handleScan() {
+    setScanning(true);
+    try {
+      const res = await fetch('/api/songs/scan', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error?.message || '扫描失败', 'error');
+      } else {
+        showToast(`扫描完成：${data.data?.added || 0} 首新歌曲`, 'success');
+        // 刷新当前视图
+        checkSetupStatus();
+      }
+    } catch (err) {
+      showToast('扫描请求失败', 'error');
+    } finally {
+      setScanning(false);
+    }
+  }
+
   if (view === 'setup' || setupStatus?.needs_setup) {
     return <SetupView />;
   }
@@ -192,7 +218,24 @@ export function App() {
         {/* 顶部 Tab 导航 */}
         <div class="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white">
           <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
-          <div class="flex items-center">
+          <div class="flex items-center gap-2">
+            <button
+              onClick={handleScan}
+              disabled={scanning}
+              class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 flex items-center gap-1"
+            >
+              {scanning ? (
+                <>
+                  <span class="animate-spin">⟳</span>
+                  扫描中...
+                </>
+              ) : (
+                <>
+                  <span>🔄</span>
+                  扫描
+                </>
+              )}
+            </button>
             <SearchBar onSearch={handleSearch} loading={searchLoading} />
           </div>
         </div>
@@ -207,30 +250,26 @@ export function App() {
               onShowSongDetail={handleShowSongDetail}
               onBatchEdit={handleBatchEdit}
               onBack={handleBackFromSearch}
+              playingSongId={currentSong?.id ?? null}
             />
           ) : activeTab === 'artists' ? (
-            <ArtistsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} />
+            <ArtistsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} playingSongId={currentSong?.id ?? null} />
           ) : activeTab === 'albums' ? (
-            <AlbumsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} />
+            <AlbumsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} playingSongId={currentSong?.id ?? null} />
           ) : (
-            <FoldersView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} />
+            <FoldersView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} playingSongId={currentSong?.id ?? null} />
           )}
         </main>
 
-        {/* 批量编辑面板 (未来) */}
-        {showBatchEdit && (
-          <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h2 class="text-lg font-semibold mb-4">批量编辑</h2>
-              <p class="text-gray-500 mb-4">批量编辑功能将在 Epic 4 中实现</p>
-              <button
-                onClick={() => setShowBatchEdit(false)}
-                class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                关闭
-              </button>
-            </div>
-          </div>
+        {/* 批量编辑面板 */}
+        {showEditPanel && (
+          <SideEditPanel
+            onClose={() => setShowEditPanel(false)}
+            onSuccess={() => {
+              showToast('批量更新成功', 'success');
+            }}
+            onError={(msg) => showToast(msg, 'error')}
+          />
         )}
 
         {/* 歌曲详情面板 */}
@@ -240,6 +279,16 @@ export function App() {
           onClose={handleCloseSongDetail}
           onError={showToast}
         />
+
+        {/* 播放器面板 */}
+        {showPlayer && currentSong && (
+          <SidePlayer
+            song={currentSong}
+            onClose={handleClosePlayer}
+            onEdit={handleClosePlayer}
+            onError={(msg) => showToast(msg, 'error')}
+          />
+        )}
       </div>
     </SelectionProvider>
   );

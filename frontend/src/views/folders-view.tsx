@@ -11,9 +11,10 @@ interface FoldersViewProps {
   onPlaySong: (song: Song) => void;
   onShowSongDetail: (song: Song) => void;
   onBatchEdit?: () => void;
+  playingSongId?: number | null;
 }
 
-export function FoldersView({ onPlaySong, onShowSongDetail, onBatchEdit }: FoldersViewProps) {
+export function FoldersView({ onPlaySong, onShowSongDetail, onBatchEdit, playingSongId }: FoldersViewProps) {
   const { selectAll } = useSelection();
   const [folders, setFolders] = useState<FolderWithCount[]>([]);
   const [expandedFolder, setExpandedFolder] = useState<number | null>(null);
@@ -334,6 +335,7 @@ export function FoldersView({ onPlaySong, onShowSongDetail, onBatchEdit }: Folde
                                   onPlay={onPlaySong}
                                   onShowDetail={onShowSongDetail}
                                   showPath={true}
+                                  playingSongId={playingSongId}
                                 />
                               ))}
                             </tbody>

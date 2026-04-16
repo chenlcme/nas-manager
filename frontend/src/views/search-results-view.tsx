@@ -22,6 +22,7 @@ interface SearchResultsViewProps {
   onShowSongDetail: (song: Song) => void;
   onBatchEdit: () => void;
   onBack: () => void;
+  playingSongId?: number | null;
 }
 
 export function SearchResultsView({
@@ -31,6 +32,7 @@ export function SearchResultsView({
   onShowSongDetail,
   onBatchEdit,
   onBack,
+  playingSongId,
 }: SearchResultsViewProps) {
   const [results, setResults] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
@@ -234,10 +236,12 @@ export function SearchResultsView({
               </tr>
             </thead>
             <tbody>
-              {results.map((song) => (
+              {results.map((song) => {
+                const isPlaying = playingSongId === song.id;
+                return (
                 <tr
                   key={song.id}
-                  class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                  class={`border-b border-gray-100 cursor-pointer ${isPlaying ? 'bg-green-100' : 'hover:bg-gray-50'}`}
                   onClick={() => onShowSongDetail(song)}
                 >
                   <td class="px-4 py-2">
@@ -246,11 +250,17 @@ export function SearchResultsView({
                         e.stopPropagation();
                         onPlaySong(song);
                       }}
-                      class="p-1 hover:bg-green-100 rounded-full"
+                      class={`p-1 rounded-full ${isPlaying ? 'text-green-500' : 'hover:bg-green-100 text-green-600'}`}
                     >
-                      <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
+                      {isPlaying ? (
+                        <svg class="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 3v9.28a4.39 4.39 0 0 0-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.72 4.45-3.94.57-.3 1.05-.75 1.05-1.78V6h4V3h-8z"/>
+                        </svg>
+                      ) : (
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      )}
                     </button>
                   </td>
                   <td class="px-4 py-2">
@@ -270,7 +280,8 @@ export function SearchResultsView({
                     {song.duration ? formatDuration(song.duration) : '-'}
                   </td>
                 </tr>
-              ))}
+              );
+            })}
             </tbody>
           </table>
         )}

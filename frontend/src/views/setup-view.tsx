@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 
 // SetupView - 首次配置向导组件
 export function SetupView() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1: music dir, 2: db path, 3: scanning
   const [musicDir, setMusicDir] = useState('');
   const [dbPath, setDBPath] = useState('~/.nas-manager/nas-manager.db');
   const [error, setError] = useState('');
@@ -44,7 +44,15 @@ export function SetupView() {
         throw new Error(data.error?.message || '配置保存失败');
       }
 
-      // 配置成功，跳转到主页面
+      // 配置成功，触发首次扫描
+      setStep(3); // 添加扫描中状态
+      try {
+        await fetch('/api/songs/scan', { method: 'POST' });
+      } catch {
+        // 扫描失败不阻止跳转
+      }
+
+      // 跳转到主页面
       window.location.href = '/';
     } catch (err) {
       setError(err instanceof Error ? err.message : '配置保存失败');
@@ -139,6 +147,16 @@ export function SetupView() {
                 {loading ? '保存中...' : '完成配置'}
               </button>
             </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div class="text-center">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">正在扫描音乐文件...</h2>
+            <div class="flex justify-center mb-4">
+              <span class="text-4xl animate-spin">⟳</span>
+            </div>
+            <p class="text-gray-600">这可能需要几分钟时间，请稍候</p>
           </div>
         )}
       </div>
