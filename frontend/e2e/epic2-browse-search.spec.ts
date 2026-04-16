@@ -160,7 +160,7 @@ test.describe('Epic 2: 音乐库浏览与搜索', () => {
       await searchInput.press('Enter');
 
       // 应该显示搜索结果
-      await expect(page.locator('text=搜索结果')).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('text=/找到.*首歌曲/')).toBeVisible({ timeout: 5000 });
     });
 
     test('空关键词搜索应不触发请求', async ({ page }) => {
@@ -269,7 +269,7 @@ test.describe('Epic 2: 音乐库浏览与搜索', () => {
       await checkbox.click();
 
       // 应该显示选中数量
-      await expect(page.locator('text=已选择')).toBeVisible();
+      await expect(page.locator('text=已选中')).toBeVisible();
     });
 
     test('选中按钮应该显示批量操作选项', async ({ page }) => {
@@ -281,7 +281,7 @@ test.describe('Epic 2: 音乐库浏览与搜索', () => {
       await page.locator('input[type="checkbox"]').first().click();
 
       // 应该显示"全选"和"批量编辑"按钮
-      await expect(page.locator('button:has-text("全选")')).toBeVisible();
+      await expect(page.locator('button:has-text("全选")').first()).toBeVisible();
     });
   });
 
@@ -337,7 +337,7 @@ test.describe('Epic 2: 音乐库浏览与搜索', () => {
       await page.locator('button:has-text("删除")').click();
 
       // 应该显示确认对话框
-      await expect(page.locator('text=确认删除')).toBeVisible();
+      await expect(page.locator('h3:has-text("确认删除")')).toBeVisible();
     });
   });
 });

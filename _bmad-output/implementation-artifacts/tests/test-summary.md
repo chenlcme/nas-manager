@@ -174,6 +174,7 @@ npm run test:e2e:ui
 |------|-------------|
 | `frontend/e2e/epic1-setup.spec.ts` | Epic 1 Setup Wizard E2E Tests |
 | `frontend/e2e/epic2-browse-search.spec.ts` | Epic 2 Browse & Search E2E Tests |
+| `frontend/e2e/epic3-4-player-batch.spec.ts` | Epic 3 & 4 Player & Batch Edit E2E Tests |
 | `frontend/e2e/example.spec.ts` | Example tests |
 
 ### E2E Test Coverage
@@ -187,6 +188,8 @@ npm run test:e2e:ui
 | Epic 2 | Search (Tag) | 3 tests |
 | Epic 2 | Song Selection | 2 tests |
 | Epic 2 | Delete Songs | 2 tests |
+| Epic 3 | Player | 9 tests |
+| Epic 4 | Batch Edit | 11 tests |
 
 ### Install Playwright browsers
 
