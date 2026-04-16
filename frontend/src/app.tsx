@@ -4,7 +4,6 @@ import { ArtistsView } from './views/artists-view';
 import { AlbumsView } from './views/albums-view';
 import { FoldersView } from './views/folders-view';
 import { TabNav } from './components/common/tab-nav';
-import { SelectionBar } from './components/common/selection-bar';
 import { SongDetailPanel } from './components/song/song-detail-panel';
 import { SelectionProvider } from './contexts/selection-context';
 import { Song } from './types/song';
@@ -180,18 +179,15 @@ export function App() {
         {/* 主内容区 */}
         <main class="flex-1 overflow-hidden">
           {activeTab === 'artists' && (
-            <ArtistsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} />
+            <ArtistsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} />
           )}
           {activeTab === 'albums' && (
-            <AlbumsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} />
+            <AlbumsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} />
           )}
           {activeTab === 'folders' && (
-            <FoldersView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} />
+            <FoldersView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} />
           )}
         </main>
-
-        {/* 选择操作栏 */}
-        <SelectionBar totalCount={0} onBatchEdit={handleBatchEdit} />
 
         {/* 批量编辑面板 (未来) */}
         {showBatchEdit && (

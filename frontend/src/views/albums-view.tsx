@@ -1,15 +1,19 @@
 import { useState, useEffect, useRef, Fragment } from 'preact/hooks';
 import { AlbumWithCount, Song } from '../types/song';
+import { useSelection } from '../contexts/selection-context';
 import { SongTableRow } from '../components/song/song-table-row';
 import { SortSelector } from '../components/common/sort-selector';
+import { SelectionBar } from '../components/common/selection-bar';
 import { DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER, SORT_BY_PARAM, ORDER_PARAM, SortField, SortOrder, REQUEST_TIMEOUT_MS } from '../constants/sort';
 
 interface AlbumsViewProps {
   onPlaySong: (song: Song) => void;
   onShowSongDetail: (song: Song) => void;
+  onBatchEdit?: () => void;
 }
 
-export function AlbumsView({ onPlaySong, onShowSongDetail }: AlbumsViewProps) {
+export function AlbumsView({ onPlaySong, onShowSongDetail, onBatchEdit }: AlbumsViewProps) {
+  const { selectAll } = useSelection();
   const [albums, setAlbums] = useState<AlbumWithCount[]>([]);
   const [expandedAlbum, setExpandedAlbum] = useState<number | null>(null);
   const [albumSongs, setAlbumSongs] = useState<Song[]>([]);
@@ -266,6 +270,12 @@ export function AlbumsView({ onPlaySong, onShowSongDetail }: AlbumsViewProps) {
                   {expandedAlbum === album.id && (
                     <tr key={`${album.id}-songs`}>
                       <td colSpan={4} class="bg-gray-50 px-4 py-2">
+                        {/* SelectionBar */}
+                        <SelectionBar
+                          totalCount={albumSongs.length}
+                          onBatchEdit={onBatchEdit}
+                          onSelectAll={() => selectAll(albumSongs.map(s => s.id))}
+                        />
                         {/* 排序控制 */}
                         <div class="flex items-center justify-end mb-2">
                           <SortSelector

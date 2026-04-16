@@ -1,15 +1,19 @@
 import { useState, useEffect, useRef, Fragment } from 'preact/hooks';
 import { FolderWithCount, Song } from '../types/song';
+import { useSelection } from '../contexts/selection-context';
 import { SongTableRow } from '../components/song/song-table-row';
 import { SortSelector } from '../components/common/sort-selector';
+import { SelectionBar } from '../components/common/selection-bar';
 import { DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER, SORT_BY_PARAM, ORDER_PARAM, SortField, SortOrder, REQUEST_TIMEOUT_MS } from '../constants/sort';
 
 interface FoldersViewProps {
   onPlaySong: (song: Song) => void;
   onShowSongDetail: (song: Song) => void;
+  onBatchEdit?: () => void;
 }
 
-export function FoldersView({ onPlaySong, onShowSongDetail }: FoldersViewProps) {
+export function FoldersView({ onPlaySong, onShowSongDetail, onBatchEdit }: FoldersViewProps) {
+  const { selectAll } = useSelection();
   const [folders, setFolders] = useState<FolderWithCount[]>([]);
   const [expandedFolder, setExpandedFolder] = useState<number | null>(null);
   const [folderSongs, setFolderSongs] = useState<Song[]>([]);
@@ -260,6 +264,12 @@ export function FoldersView({ onPlaySong, onShowSongDetail }: FoldersViewProps) 
                   {expandedFolder === folder.id && (
                     <tr key={`${folder.id}-songs`}>
                       <td colSpan={3} class="bg-gray-50 px-4 py-2">
+                        {/* SelectionBar */}
+                        <SelectionBar
+                          totalCount={folderSongs.length}
+                          onBatchEdit={onBatchEdit}
+                          onSelectAll={() => selectAll(folderSongs.map(s => s.id))}
+                        />
                         {/* 排序控制 */}
                         <div class="flex items-center justify-end mb-2">
                           <SortSelector

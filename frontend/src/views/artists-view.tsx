@@ -3,14 +3,17 @@ import { ArtistWithCount, Song } from '../types/song';
 import { useSelection } from '../contexts/selection-context';
 import { SongTableRow } from '../components/song/song-table-row';
 import { SortSelector } from '../components/common/sort-selector';
+import { SelectionBar } from '../components/common/selection-bar';
 import { DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER, SORT_BY_PARAM, ORDER_PARAM, SortField, SortOrder, REQUEST_TIMEOUT_MS } from '../constants/sort';
 
 interface ArtistsViewProps {
   onPlaySong: (song: Song) => void;
   onShowSongDetail: (song: Song) => void;
+  onBatchEdit?: () => void;
 }
 
-export function ArtistsView({ onPlaySong, onShowSongDetail }: ArtistsViewProps) {
+export function ArtistsView({ onPlaySong, onShowSongDetail, onBatchEdit }: ArtistsViewProps) {
+  const { selectAll } = useSelection();
   const [artists, setArtists] = useState<ArtistWithCount[]>([]);
   const [expandedArtist, setExpandedArtist] = useState<number | null>(null);
   const [artistSongs, setArtistSongs] = useState<Song[]>([]);
@@ -256,6 +259,12 @@ export function ArtistsView({ onPlaySong, onShowSongDetail }: ArtistsViewProps) 
                   {expandedArtist === artist.id && (
                     <tr key={`${artist.id}-songs`}>
                       <td colSpan={3} class="bg-gray-50 px-4 py-2">
+                        {/* SelectionBar */}
+                        <SelectionBar
+                          totalCount={artistSongs.length}
+                          onBatchEdit={onBatchEdit}
+                          onSelectAll={() => selectAll(artistSongs.map(s => s.id))}
+                        />
                         {/* 排序控制 */}
                         <div class="flex items-center justify-end mb-2">
                           <SortSelector
