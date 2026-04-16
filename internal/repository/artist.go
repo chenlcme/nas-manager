@@ -78,8 +78,8 @@ func (r *ArtistRepository) GetSongsByArtist(artistName string, sortBy string, or
 	}
 
 	query := r.db.Where("artist = ?", artistName)
-	// 使用 gorm.Expr 安全地构建 ORDER 子句，避免 SQL 注入风险
-	query = query.Order(gorm.Expr("? ?", sortBy, order))
+	// 使用经过白名单验证的排序参数直接构建 ORDER 子句
+	query = query.Order(sortBy + " " + order)
 
 	err := query.Find(&songs).Error
 	return songs, err

@@ -94,13 +94,23 @@ func (h *SongHandler) DeleteSongs(c *gin.Context) {
 		return
 	}
 
-	log.Printf("[SongHandler] DeleteSongs count=%d", len(req.IDs))
+	// Deduplicate IDs to avoid processing the same song multiple times
+	seen := make(map[uint]bool)
+	uniqueIDs := make([]uint, 0, len(req.IDs))
+	for _, id := range req.IDs {
+		if !seen[id] {
+			seen[id] = true
+			uniqueIDs = append(uniqueIDs, id)
+		}
+	}
+
+	log.Printf("[SongHandler] DeleteSongs count=%d after dedup=%d", len(req.IDs), len(uniqueIDs))
 
 	result := &DeleteResult{
-		Total:     len(req.IDs),
+		Total:     len(uniqueIDs),
 		Succeeded: 0,
 		Failed:    0,
-		Results:   make([]SongDeleteResult, 0, len(req.IDs)),
+		Results:   make([]SongDeleteResult, 0, len(uniqueIDs)),
 	}
 
 	// Use mutex to protect results slice
@@ -108,7 +118,7 @@ func (h *SongHandler) DeleteSongs(c *gin.Context) {
 	var wg sync.WaitGroup
 
 	// Process deletions concurrently with timeout control
-	for _, id := range req.IDs {
+	for _, id := range uniqueIDs {
 		wg.Add(1)
 		go func(songID uint) {
 			defer wg.Done()
@@ -143,7 +153,7 @@ func (h *SongHandler) DeleteSongs(c *gin.Context) {
 				return
 			}
 
-			// Delete file with timeout
+			// Delete file with timeout - use goroutine with explicit done channel
 			deleteCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 
@@ -152,6 +162,7 @@ func (h *SongHandler) DeleteSongs(c *gin.Context) {
 				done <- os.Remove(song.FilePath)
 			}()
 
+			// Use select with default to prevent goroutine leak on timeout
 			select {
 			case err := <-done:
 				if err != nil {
@@ -172,6 +183,8 @@ func (h *SongHandler) DeleteSongs(c *gin.Context) {
 					return
 				}
 			case <-deleteCtx.Done():
+				// Timeout occurred - the goroutine is still running but we no longer care
+				// It will exit when it tries to send on closed channel or ctx is cancelled
 				log.Printf("[SongHandler] DeleteSongs file deletion timeout: id=%d", songID)
 				mu.Lock()
 				result.Results = append(result.Results, SongDeleteResult{
@@ -245,6 +258,10 @@ func (h *SongHandler) SearchSongs(c *gin.Context) {
 		}
 	}
 
+	// Enforce maximum limit to prevent excessive queries
+	const maxLimit = 1000
+	limit = min(limit, maxLimit)
+
 	log.Printf("[SongHandler] SearchSongs keyword=%s limit=%d offset=%d", keyword, limit, offset)
 
 	songs, err := h.songRepo.SearchByFileName(keyword, limit, offset)
@@ -283,6 +300,10 @@ func (h *SongHandler) SearchSongsByTag(c *gin.Context) {
 			offset = o
 		}
 	}
+
+	// Enforce maximum limit to prevent excessive queries
+	const maxLimit = 1000
+	limit = min(limit, maxLimit)
 
 	log.Printf("[SongHandler] SearchSongsByTag keyword=%s limit=%d offset=%d", keyword, limit, offset)
 

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"nas-manager/internal/model"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -98,7 +99,10 @@ func (r *SongRepository) GetByAlbum(album string) ([]model.Song, error) {
 // SearchByFileName - 根据文件名搜索歌曲（模糊匹配，带分页）
 func (r *SongRepository) SearchByFileName(keyword string, limit, offset int) ([]model.Song, error) {
 	var songs []model.Song
-	if err := r.db.Where("file_path LIKE ?", "%"+keyword+"%").Limit(limit).Offset(offset).Find(&songs).Error; err != nil {
+	// Escape LIKE wildcards to prevent unintended matching
+	escaped := strings.ReplaceAll(keyword, "%", "\\%")
+	escaped = strings.ReplaceAll(escaped, "_", "\\_")
+	if err := r.db.Where("file_path LIKE ? ESCAPE '\\'", "%"+escaped+"%").Limit(limit).Offset(offset).Find(&songs).Error; err != nil {
 		return nil, err
 	}
 	return songs, nil
@@ -107,8 +111,12 @@ func (r *SongRepository) SearchByFileName(keyword string, limit, offset int) ([]
 // SearchByTagContent - 根据标签内容搜索歌曲（模糊匹配标题、艺术家、专辑）
 func (r *SongRepository) SearchByTagContent(keyword string, limit, offset int) ([]model.Song, error) {
 	var songs []model.Song
+	// Escape LIKE wildcards to prevent unintended matching
+	escaped := strings.ReplaceAll(keyword, "%", "\\%")
+	escaped = strings.ReplaceAll(escaped, "_", "\\_")
+	pattern := "%" + escaped + "%"
 	// 使用 OR 条件搜索 title、artist、album 字段
-	err := r.db.Where("title LIKE ? OR artist LIKE ? OR album LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%").
+	err := r.db.Where("title LIKE ? ESCAPE '\\' OR artist LIKE ? ESCAPE '\\' OR album LIKE ? ESCAPE '\\'", pattern, pattern, pattern).
 		Limit(limit).Offset(offset).Find(&songs).Error
 	if err != nil {
 		return nil, err
@@ -123,9 +131,12 @@ func (r *SongRepository) SearchByTagContentMulti(keywords []string, limit, offse
 	query := r.db.Model(&model.Song{})
 
 	for _, kw := range keywords {
-		pattern := "%" + kw + "%"
+		// Escape LIKE wildcards to prevent unintended matching
+		escaped := strings.ReplaceAll(kw, "%", "\\%")
+		escaped = strings.ReplaceAll(escaped, "_", "\\_")
+		pattern := "%" + escaped + "%"
 		// 每个关键词必须在 title、artist、album 中的至少一个字段匹配
-		query = query.Where("(title LIKE ? OR artist LIKE ? OR album LIKE ?)", pattern, pattern, pattern)
+		query = query.Where("(title LIKE ? ESCAPE '\\' OR artist LIKE ? ESCAPE '\\' OR album LIKE ? ESCAPE '\\')", pattern, pattern, pattern)
 	}
 
 	if err := query.Limit(limit).Offset(offset).Find(&songs).Error; err != nil {
