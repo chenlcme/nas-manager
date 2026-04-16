@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, Fragment } from 'preact/hooks';
+import { useState, useEffect, useRef } from 'preact/hooks';
+import { Fragment } from 'preact';
 import { AlbumWithCount, Song } from '../types/song';
 import { useSelection } from '../contexts/selection-context';
 import { SongTableRow } from '../components/song/song-table-row';

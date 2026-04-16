@@ -66,7 +66,7 @@ export function App() {
       if (res.ok) {
         const data = await res.json();
         setSetupStatus(data.data);
-        setView(data.data.configured ? 'main' : 'setup');
+        setView(data.data.needs_setup ? 'setup' : 'main');
       } else {
         setView('setup');
       }
@@ -168,7 +168,7 @@ export function App() {
     setSearchLoading(false);
   }
 
-  if (view === 'setup' || !setupStatus?.configured) {
+  if (view === 'setup' || setupStatus?.needs_setup) {
     return <SetupView />;
   }
 
