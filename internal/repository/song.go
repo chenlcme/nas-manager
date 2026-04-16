@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"nas-manager/internal/model"
 
 	"gorm.io/gorm"
@@ -52,6 +53,15 @@ func (r *SongRepository) GetAll() ([]model.Song, error) {
 func (r *SongRepository) GetByID(id uint) (*model.Song, error) {
 	var song model.Song
 	if err := r.db.First(&song, id).Error; err != nil {
+		return nil, err
+	}
+	return &song, nil
+}
+
+// GetByIDWithContext - 根据ID获取歌曲（带上下文超时）
+func (r *SongRepository) GetByIDWithContext(ctx context.Context, id uint64) (*model.Song, error) {
+	var song model.Song
+	if err := r.db.WithContext(ctx).First(&song, id).Error; err != nil {
 		return nil, err
 	}
 	return &song, nil

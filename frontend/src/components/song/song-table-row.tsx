@@ -4,6 +4,7 @@ import { useSelection } from '../../contexts/selection-context';
 interface SongTableRowProps {
   song: Song;
   onPlay: (song: Song) => void;
+  onShowDetail?: (song: Song) => void;
   showPath?: boolean; // 显示文件路径（用于文件夹视图）
 }
 
@@ -14,7 +15,7 @@ function formatDuration(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function SongTableRow({ song, onPlay, showPath }: SongTableRowProps) {
+export function SongTableRow({ song, onPlay, onShowDetail, showPath }: SongTableRowProps) {
   const { isSelected, toggle } = useSelection();
   const selected = isSelected(song.id);
 
@@ -90,14 +91,31 @@ export function SongTableRow({ song, onPlay, showPath }: SongTableRowProps) {
       </td>
 
       {/* 操作 */}
-      <td class="px-2 py-3 w-12">
-        <button
-          onClick={() => onPlay(song)}
-          class="p-2 text-gray-400 hover:text-green-500 transition-colors"
-          title="播放"
-        >
-          ▶
-        </button>
+      <td class="px-2 py-3 w-20">
+        <div class="flex items-center gap-1">
+          <button
+            onClick={() => onPlay(song)}
+            class="p-2 rounded text-gray-400 hover:text-white hover:bg-green-500 transition-colors"
+            title="播放"
+            aria-label="播放歌曲"
+          >
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </button>
+          {onShowDetail && (
+            <button
+              onClick={() => onShowDetail(song)}
+              class="p-2 rounded text-gray-400 hover:text-white hover:bg-blue-500 transition-colors"
+              title="详情"
+              aria-label="查看歌曲详情"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </button>
+          )}
+        </div>
       </td>
     </tr>
   );

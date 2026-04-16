@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'preact/hooks';
+import { useState, useEffect, useRef } from 'preact/hooks';
 import { SetupView } from './views/setup-view';
 import { ArtistsView } from './views/artists-view';
 import { AlbumsView } from './views/albums-view';
 import { FoldersView } from './views/folders-view';
 import { TabNav } from './components/common/tab-nav';
 import { SelectionBar } from './components/common/selection-bar';
+import { SongDetailPanel } from './components/song/song-detail-panel';
 import { SelectionProvider } from './contexts/selection-context';
 import { Song } from './types/song';
 
@@ -16,16 +17,43 @@ interface SetupStatus {
   hasPassword: boolean;
 }
 
+interface Toast {
+  id: number;
+  message: string;
+  type: 'error' | 'success' | 'info';
+}
+
+const REQUEST_TIMEOUT_MS = 10000;
+
 export function App() {
   const [view, setView] = useState<View>('setup');
   const [activeTab, setActiveTab] = useState<Tab>('artists');
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [showBatchEdit, setShowBatchEdit] = useState(false);
+  const [detailSong, setDetailSong] = useState<Song | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastIdRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const fetchSongIdRef = useRef<number | null>(null);
+  const toastTimeoutRefs = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
   // 检查设置状态
   useEffect(() => {
     checkSetupStatus();
+  }, []);
+
+  // Cleanup: abort in-flight requests and clear toast timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      toastTimeoutRefs.current.forEach((timeoutId) => clearTimeout(timeoutId));
+      toastTimeoutRefs.current.clear();
+    };
   }, []);
 
   async function checkSetupStatus() {
@@ -53,6 +81,78 @@ export function App() {
     // 批量编辑功能将在 Epic 4 中实现
   }
 
+  function handleShowSongDetail(song: Song) {
+    // Abort any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setDetailSong(song);
+    setDetailLoading(true);
+    fetchSongDetail(song.id);
+  }
+
+  async function fetchSongDetail(songId: number) {
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    fetchSongIdRef.current = songId;
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const res = await fetch(`/api/songs/${songId}`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        throw new Error('获取歌曲详情失败');
+      }
+
+      const data = await res.json();
+      // Only update if we're still fetching the same song (panel not closed)
+      if (fetchSongIdRef.current === songId) {
+        setDetailSong(data.data);
+        setDetailLoading(false);
+      }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      // Only update state if we're still fetching the same song
+      if (fetchSongIdRef.current === songId) {
+        setDetailLoading(false);
+        setDetailSong(null);
+
+        const message = err instanceof Error ? err.message : '获取歌曲详情失败';
+        showToast(message, 'error');
+      }
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
+    }
+  }
+
+  function showToast(message: string, type: 'error' | 'success' | 'info' = 'error') {
+    const id = ++toastIdRef.current;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    // Auto-dismiss after 4 seconds
+    const timeoutId = setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+      toastTimeoutRefs.current.delete(id);
+    }, 4000);
+    toastTimeoutRefs.current.set(id, timeoutId);
+  }
+
+  function handleCloseSongDetail() {
+    // Clear fetch tracking to prevent stale fetch from updating state
+    fetchSongIdRef.current = null;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setDetailSong(null);
+    setDetailLoading(false);
+  }
+
   if (view === 'setup' || !setupStatus?.configured) {
     return <SetupView />;
   }
@@ -60,19 +160,33 @@ export function App() {
   return (
     <SelectionProvider>
       <div class="min-h-screen bg-white flex flex-col">
+        {/* Toast 通知 */}
+        <div class="fixed top-4 right-4 z-[60] space-y-2">
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              class={`px-4 py-3 rounded-lg shadow-lg text-white text-sm animate-slide-in ${
+                toast.type === 'error' ? 'bg-red-500' : toast.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+              }`}
+            >
+              {toast.message}
+            </div>
+          ))}
+        </div>
+
         {/* 顶部 Tab 导航 */}
         <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
         {/* 主内容区 */}
         <main class="flex-1 overflow-hidden">
           {activeTab === 'artists' && (
-            <ArtistsView onPlaySong={handlePlaySong} />
+            <ArtistsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} />
           )}
           {activeTab === 'albums' && (
-            <AlbumsView onPlaySong={handlePlaySong} />
+            <AlbumsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} />
           )}
           {activeTab === 'folders' && (
-            <FoldersView onPlaySong={handlePlaySong} />
+            <FoldersView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} />
           )}
         </main>
 
@@ -94,6 +208,14 @@ export function App() {
             </div>
           </div>
         )}
+
+        {/* 歌曲详情面板 */}
+        <SongDetailPanel
+          song={detailSong}
+          loading={detailLoading}
+          onClose={handleCloseSongDetail}
+          onError={showToast}
+        />
       </div>
     </SelectionProvider>
   );

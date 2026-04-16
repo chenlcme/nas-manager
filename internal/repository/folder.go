@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"path"
 	"sort"
 	"strings"
@@ -99,8 +100,11 @@ func (r *FolderRepository) GetAllFoldersWithSongCount(orderAsc bool) ([]FolderWi
 	return results, nil
 }
 
-// GetSongsByFolder - 根据文件夹路径获取歌曲列表
-func (r *FolderRepository) GetSongsByFolder(folderPath string) ([]model.Song, error) {
+// GetSongsByFolder - 根据文件夹路径获取歌曲列表，支持排序
+// sortBy: title, duration, created_at
+// order: asc, desc
+// Returns error if sortBy or order is invalid
+func (r *FolderRepository) GetSongsByFolder(folderPath string, sortBy string, order string) ([]model.Song, error) {
 	var songs []model.Song
 
 	// 规范化路径分隔符（统一使用 /）
@@ -111,15 +115,37 @@ func (r *FolderRepository) GetSongsByFolder(folderPath string) ([]model.Song, er
 	escapedPath := strings.ReplaceAll(folderPath, "_", "_")
 	escapedPath = strings.ReplaceAll(escapedPath, "%", "\\%")
 
+	// 校验排序参数，使用白名单
+	validSortFields := map[string]bool{
+		"title":     true,
+		"duration":   true,
+		"created_at": true,
+	}
+	validOrders := map[string]bool{"asc": true, "desc": true}
+
+	// 验证 sortBy 参数，无效则返回错误（不静默默认值）
+	if !validSortFields[sortBy] {
+		return nil, fmt.Errorf("invalid sort_by parameter: %s", sortBy)
+	}
+	// 验证 order 参数，无效则返回错误
+	if !validOrders[order] {
+		return nil, fmt.Errorf("invalid order parameter: %s", order)
+	}
+
 	var err error
+	var query *gorm.DB
 	if folderPath == "/" || folderPath == "" {
 		// 根目录：匹配直接在根目录下的文件（只有一个 / 的路径）
 		// 即 file_path 格式为 /filename.ext（根目录下直接文件）
-		err = r.db.Where("file_path LIKE '/%' AND file_path NOT LIKE '/%/%'").Find(&songs).Error
+		query = r.db.Where("file_path LIKE '/%' AND file_path NOT LIKE '/%/%'")
 	} else {
 		// 子目录：匹配所有以 folderPath/ 开头的文件
-		err = r.db.Where("file_path LIKE ? ESCAPE '\\'", escapedPath+"/%").Find(&songs).Error
+		query = r.db.Where("file_path LIKE ? ESCAPE '\\'", escapedPath+"/%")
 	}
+
+	// 使用 gorm.Expr 安全地构建 ORDER 子句，避免 SQL 注入风险
+	query = query.Order(gorm.Expr("? ?", sortBy, order))
+	err = query.Find(&songs).Error
 	if err != nil {
 		return nil, err
 	}

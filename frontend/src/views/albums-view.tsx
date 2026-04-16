@@ -6,9 +6,10 @@ import { DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER, SORT_BY_PARAM, ORDER_PARAM, Sor
 
 interface AlbumsViewProps {
   onPlaySong: (song: Song) => void;
+  onShowSongDetail: (song: Song) => void;
 }
 
-export function AlbumsView({ onPlaySong }: AlbumsViewProps) {
+export function AlbumsView({ onPlaySong, onShowSongDetail }: AlbumsViewProps) {
   const [albums, setAlbums] = useState<AlbumWithCount[]>([]);
   const [expandedAlbum, setExpandedAlbum] = useState<number | null>(null);
   const [albumSongs, setAlbumSongs] = useState<Song[]>([]);
@@ -312,6 +313,7 @@ export function AlbumsView({ onPlaySong }: AlbumsViewProps) {
                                   key={song.id}
                                   song={song}
                                   onPlay={onPlaySong}
+                                  onShowDetail={onShowSongDetail}
                                 />
                               ))}
                             </tbody>

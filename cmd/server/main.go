@@ -89,6 +89,7 @@ func main() {
 	artistHandler := handler.NewArtistHandler(artistRepo)
 	albumHandler := handler.NewAlbumHandler(albumRepo)
 	folderHandler := handler.NewFolderHandler(folderRepo)
+	songHandler := handler.NewSongHandler(songRepo)
 
 	// Setup Gin router
 	r := gin.Default()
@@ -120,6 +121,9 @@ func main() {
 		// Folder routes
 		api.GET("/folders", folderHandler.GetFolders)
 		api.GET("/folders/:id/songs", folderHandler.GetFolderSongs)
+
+		// Song routes
+		api.GET("/songs/:id", songHandler.GetSong)
 	}
 
 	fmt.Println("nas-manager server starting on :8080...")

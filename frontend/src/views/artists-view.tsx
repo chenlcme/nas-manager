@@ -7,9 +7,10 @@ import { DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER, SORT_BY_PARAM, ORDER_PARAM, Sor
 
 interface ArtistsViewProps {
   onPlaySong: (song: Song) => void;
+  onShowSongDetail: (song: Song) => void;
 }
 
-export function ArtistsView({ onPlaySong }: ArtistsViewProps) {
+export function ArtistsView({ onPlaySong, onShowSongDetail }: ArtistsViewProps) {
   const [artists, setArtists] = useState<ArtistWithCount[]>([]);
   const [expandedArtist, setExpandedArtist] = useState<number | null>(null);
   const [artistSongs, setArtistSongs] = useState<Song[]>([]);
@@ -302,6 +303,7 @@ export function ArtistsView({ onPlaySong }: ArtistsViewProps) {
                                   key={song.id}
                                   song={song}
                                   onPlay={onPlaySong}
+                                  onShowDetail={onShowSongDetail}
                                 />
                               ))}
                             </tbody>

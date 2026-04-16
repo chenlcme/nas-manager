@@ -95,7 +95,7 @@ func TestArtistRepository_GetSongsByArtist(t *testing.T) {
 	}
 
 	// 测试获取特定艺术家的歌曲
-	found, err := repo.GetSongsByArtist("周杰伦")
+	found, err := repo.GetSongsByArtist("周杰伦", "title", "asc")
 	if err != nil {
 		t.Fatalf("Failed to get songs by artist: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestArtistRepository_GetSongsByArtist_NotFound(t *testing.T) {
 	db := createArtistTestDB(t)
 	repo := NewArtistRepository(db)
 
-	found, err := repo.GetSongsByArtist("不存在的艺术家")
+	found, err := repo.GetSongsByArtist("不存在的艺术家", "title", "asc")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -155,5 +155,81 @@ func TestArtistRepository_GetAllArtistsWithSongCount_EmptyArtist(t *testing.T) {
 
 	if artists[0].Name != "周杰伦" {
 		t.Errorf("Expected artist to be 周杰伦, got %s", artists[0].Name)
+	}
+}
+
+func TestArtistRepository_GetSongsByArtist_InvalidSortBy(t *testing.T) {
+	db := createArtistTestDB(t)
+	repo := NewArtistRepository(db)
+
+	// 创建测试数据
+	songs := []*model.Song{
+		{FilePath: "/test/song1.mp3", Title: "晴天", Artist: "周杰伦"},
+	}
+	for _, s := range songs {
+		db.Create(s)
+	}
+
+	// 使用无效的 sort_by 参数应该返回错误
+	_, err := repo.GetSongsByArtist("周杰伦", "invalid_field", "asc")
+	if err == nil {
+		t.Error("Expected error for invalid sort_by parameter, got nil")
+	}
+}
+
+func TestArtistRepository_GetSongsByArtist_InvalidOrder(t *testing.T) {
+	db := createArtistTestDB(t)
+	repo := NewArtistRepository(db)
+
+	// 创建测试数据
+	songs := []*model.Song{
+		{FilePath: "/test/song1.mp3", Title: "晴天", Artist: "周杰伦"},
+	}
+	for _, s := range songs {
+		db.Create(s)
+	}
+
+	// 使用无效的 order 参数应该返回错误
+	_, err := repo.GetSongsByArtist("周杰伦", "title", "invalid_order")
+	if err == nil {
+		t.Error("Expected error for invalid order parameter, got nil")
+	}
+}
+
+func TestArtistRepository_GetSongsByArtist_ValidSortParameters(t *testing.T) {
+	db := createArtistTestDB(t)
+	repo := NewArtistRepository(db)
+
+	// 创建测试数据
+	songs := []*model.Song{
+		{FilePath: "/test/song1.mp3", Title: "晴天", Artist: "周杰伦", Duration: 180},
+		{FilePath: "/test/song2.mp3", Title: "稻香", Artist: "周杰伦", Duration: 240},
+		{FilePath: "/test/song3.mp3", Title: "七里香", Artist: "周杰伦", Duration: 200},
+	}
+	for _, s := range songs {
+		db.Create(s)
+	}
+
+	// 测试有效的 sort_by 和 order 参数组合
+	testCases := []struct {
+		sortBy string
+		order  string
+	}{
+		{"title", "asc"},
+		{"title", "desc"},
+		{"duration", "asc"},
+		{"duration", "desc"},
+		{"created_at", "asc"},
+		{"created_at", "desc"},
+	}
+
+	for _, tc := range testCases {
+		found, err := repo.GetSongsByArtist("周杰伦", tc.sortBy, tc.order)
+		if err != nil {
+			t.Errorf("Unexpected error for sortBy=%s, order=%s: %v", tc.sortBy, tc.order, err)
+		}
+		if len(found) != 3 {
+			t.Errorf("Expected 3 songs for sortBy=%s, order=%s, got %d", tc.sortBy, tc.order, len(found))
+		}
 	}
 }

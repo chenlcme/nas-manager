@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"fmt"
+
 	"nas-manager/internal/model"
 
 	"gorm.io/gorm"
@@ -52,10 +54,35 @@ func (r *AlbumRepository) GetAllAlbumsWithSongCount(orderAsc bool) ([]AlbumWithC
 	return results, nil
 }
 
-// GetSongsByAlbum - 根据专辑名和艺术家获取歌曲列表
-func (r *AlbumRepository) GetSongsByAlbum(albumName string, artistName string) ([]model.Song, error) {
+// GetSongsByAlbum - 根据专辑名和艺术家获取歌曲列表，支持排序
+// sortBy: title, duration, created_at
+// order: asc, desc
+// Returns error if sortBy or order is invalid
+func (r *AlbumRepository) GetSongsByAlbum(albumName string, artistName string, sortBy string, order string) ([]model.Song, error) {
 	var songs []model.Song
-	err := r.db.Where("album = ? AND artist = ?", albumName, artistName).Find(&songs).Error
+
+	// 校验排序参数，使用白名单
+	validSortFields := map[string]bool{
+		"title":     true,
+		"duration":   true,
+		"created_at": true,
+	}
+	validOrders := map[string]bool{"asc": true, "desc": true}
+
+	// 验证 sortBy 参数，无效则返回错误（不静默默认值）
+	if !validSortFields[sortBy] {
+		return nil, fmt.Errorf("invalid sort_by parameter: %s", sortBy)
+	}
+	// 验证 order 参数，无效则返回错误
+	if !validOrders[order] {
+		return nil, fmt.Errorf("invalid order parameter: %s", order)
+	}
+
+	query := r.db.Where("album = ? AND artist = ?", albumName, artistName)
+	// 使用 gorm.Expr 安全地构建 ORDER 子句，避免 SQL 注入风险
+	query = query.Order(gorm.Expr("? ?", sortBy, order))
+
+	err := query.Find(&songs).Error
 	return songs, err
 }
 

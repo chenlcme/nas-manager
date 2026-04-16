@@ -6,9 +6,10 @@ import { DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER, SORT_BY_PARAM, ORDER_PARAM, Sor
 
 interface FoldersViewProps {
   onPlaySong: (song: Song) => void;
+  onShowSongDetail: (song: Song) => void;
 }
 
-export function FoldersView({ onPlaySong }: FoldersViewProps) {
+export function FoldersView({ onPlaySong, onShowSongDetail }: FoldersViewProps) {
   const [folders, setFolders] = useState<FolderWithCount[]>([]);
   const [expandedFolder, setExpandedFolder] = useState<number | null>(null);
   const [folderSongs, setFolderSongs] = useState<Song[]>([]);
@@ -309,6 +310,7 @@ export function FoldersView({ onPlaySong }: FoldersViewProps) {
                                   key={song.id}
                                   song={song}
                                   onPlay={onPlaySong}
+                                  onShowDetail={onShowSongDetail}
                                   showPath={true}
                                 />
                               ))}
