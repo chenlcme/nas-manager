@@ -34,6 +34,16 @@ export function FoldersView({ onPlaySong, onShowSongDetail, onBatchEdit }: Folde
   // 防抖定时器
   const debounceTimerRef = useRef<number | null>(null);
 
+  // 删除成功后刷新
+  const handleDeleteSuccess = () => {
+    // 刷新文件夹列表（歌曲数量可能变化）
+    fetchFolders();
+    // 如果有展开的文件夹，刷新其歌曲列表
+    if (expandedFolder !== null) {
+      toggleFolder(expandedFolder);
+    }
+  };
+
   // 获取文件夹列表
   useEffect(() => {
     setLoading(true);
@@ -269,6 +279,7 @@ export function FoldersView({ onPlaySong, onShowSongDetail, onBatchEdit }: Folde
                           totalCount={folderSongs.length}
                           onBatchEdit={onBatchEdit}
                           onSelectAll={() => selectAll(folderSongs.map(s => s.id))}
+                          onDeleteSuccess={handleDeleteSuccess}
                         />
                         {/* 排序控制 */}
                         <div class="flex items-center justify-end mb-2">

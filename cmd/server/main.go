@@ -124,6 +124,7 @@ func main() {
 
 		// Song routes
 		api.GET("/songs/:id", songHandler.GetSong)
+		api.POST("/songs/delete", songHandler.DeleteSongs)
 	}
 
 	fmt.Println("nas-manager server starting on :8080...")

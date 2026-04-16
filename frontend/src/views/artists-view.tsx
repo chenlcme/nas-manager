@@ -34,6 +34,16 @@ export function ArtistsView({ onPlaySong, onShowSongDetail, onBatchEdit }: Artis
   // 防抖定时器
   const debounceTimerRef = useRef<number | null>(null);
 
+  // 删除成功后刷新
+  const handleDeleteSuccess = () => {
+    // 刷新艺术家列表（歌曲数量可能变化）
+    fetchArtists();
+    // 如果有展开的艺术家，刷新其歌曲列表
+    if (expandedArtist !== null) {
+      toggleArtist(expandedArtist, '');
+    }
+  };
+
   // 获取艺术家列表
   useEffect(() => {
     fetchArtists();
@@ -264,6 +274,7 @@ export function ArtistsView({ onPlaySong, onShowSongDetail, onBatchEdit }: Artis
                           totalCount={artistSongs.length}
                           onBatchEdit={onBatchEdit}
                           onSelectAll={() => selectAll(artistSongs.map(s => s.id))}
+                          onDeleteSuccess={handleDeleteSuccess}
                         />
                         {/* 排序控制 */}
                         <div class="flex items-center justify-end mb-2">

@@ -34,6 +34,16 @@ export function AlbumsView({ onPlaySong, onShowSongDetail, onBatchEdit }: Albums
   // 防抖定时器
   const debounceTimerRef = useRef<number | null>(null);
 
+  // 删除成功后刷新
+  const handleDeleteSuccess = () => {
+    // 刷新专辑列表（歌曲数量可能变化）
+    fetchAlbums();
+    // 如果有展开的专辑，刷新其歌曲列表
+    if (expandedAlbum !== null) {
+      toggleAlbum(expandedAlbum);
+    }
+  };
+
   // 获取专辑列表
   useEffect(() => {
     setLoading(true);
@@ -275,6 +285,7 @@ export function AlbumsView({ onPlaySong, onShowSongDetail, onBatchEdit }: Albums
                           totalCount={albumSongs.length}
                           onBatchEdit={onBatchEdit}
                           onSelectAll={() => selectAll(albumSongs.map(s => s.id))}
+                          onDeleteSuccess={handleDeleteSuccess}
                         />
                         {/* 排序控制 */}
                         <div class="flex items-center justify-end mb-2">

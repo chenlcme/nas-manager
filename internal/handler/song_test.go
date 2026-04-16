@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"nas-manager/internal/model"
@@ -272,5 +273,229 @@ func TestGetSong_NullZeroFields(t *testing.T) {
 	if song.Duration != 0 {
 		t.Errorf("Expected duration 0, got %d", song.Duration)
 	}
+}
+
+func TestDeleteSongs_Success(t *testing.T) {
+	db := setupTestDB(t)
+
+	// Create test songs with actual files
+	tmpDir := t.TempDir()
+	song1Path := tmpDir + "/song1.mp3"
+	song2Path := tmpDir + "/song2.mp3"
+
+	// Create actual files
+	if err := createTestFile(song1Path); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+	if err := createTestFile(song2Path); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	testSong1 := &model.Song{
+		FilePath: song1Path,
+		Title:    "Test Song 1",
+		Artist:   "Test Artist",
+	}
+	testSong2 := &model.Song{
+		FilePath: song2Path,
+		Title:    "Test Song 2",
+		Artist:   "Test Artist",
+	}
+	if err := db.Create(testSong1).Error; err != nil {
+		t.Fatalf("Failed to create test song 1: %v", err)
+	}
+	if err := db.Create(testSong2).Error; err != nil {
+		t.Fatalf("Failed to create test song 2: %v", err)
+	}
+
+	// Setup handler
+	songRepo := repository.NewSongRepository(db)
+	handler := NewSongHandler(songRepo)
+
+	// Setup Gin router
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.POST("/songs/delete", handler.DeleteSongs)
+
+	// Make request
+	reqBody := `{"ids": [1, 2]}`
+	req, _ := http.NewRequest("POST", "/songs/delete", nil)
+	req.Body = createRequestBody(reqBody)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Check status code
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	// Parse response
+	var resp map[string]json.RawMessage
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	dataRaw, ok := resp["data"]
+	if !ok {
+		t.Fatal("Expected 'data' field in response")
+	}
+
+	var result DeleteResult
+	if err := json.Unmarshal(dataRaw, &result); err != nil {
+		t.Fatalf("Failed to unmarshal result: %v", err)
+	}
+
+	if result.Total != 2 {
+		t.Errorf("Expected total 2, got %d", result.Total)
+	}
+	if result.Succeeded != 2 {
+		t.Errorf("Expected succeeded 2, got %d", result.Succeeded)
+	}
+	if result.Failed != 0 {
+		t.Errorf("Expected failed 0, got %d", result.Failed)
+	}
+
+	// Verify database records are deleted
+	var count int64
+	db.Model(&model.Song{}).Count(&count)
+	if count != 0 {
+		t.Errorf("Expected 0 songs in DB, got %d", count)
+	}
+
+	// Verify files are deleted
+	if fileExists(song1Path) {
+		t.Errorf("Expected file %s to be deleted", song1Path)
+	}
+	if fileExists(song2Path) {
+		t.Errorf("Expected file %s to be deleted", song2Path)
+	}
+}
+
+func TestDeleteSongs_EmptyIDs(t *testing.T) {
+	db := setupTestDB(t)
+
+	// Setup handler
+	songRepo := repository.NewSongRepository(db)
+	handler := NewSongHandler(songRepo)
+
+	// Setup Gin router
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.POST("/songs/delete", handler.DeleteSongs)
+
+	// Make request with empty IDs
+	reqBody := `{"ids": []}`
+	req, _ := http.NewRequest("POST", "/songs/delete", nil)
+	req.Body = createRequestBody(reqBody)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Should return 400 Bad Request
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected status %d, got %d", http.StatusBadRequest, w.Code)
+	}
+}
+
+func TestDeleteSongs_PartialFailure(t *testing.T) {
+	db := setupTestDB(t)
+
+	// Create one test song with an actual file
+	tmpDir := t.TempDir()
+	song1Path := tmpDir + "/song1.mp3"
+	if err := createTestFile(song1Path); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	testSong1 := &model.Song{
+		FilePath: song1Path,
+		Title:    "Test Song 1",
+	}
+	if err := db.Create(testSong1).Error; err != nil {
+		t.Fatalf("Failed to create test song 1: %v", err)
+	}
+
+	// Setup handler
+	songRepo := repository.NewSongRepository(db)
+	handler := NewSongHandler(songRepo)
+
+	// Setup Gin router
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.POST("/songs/delete", handler.DeleteSongs)
+
+	// Make request with one valid ID and one non-existent ID
+	reqBody := `{"ids": [1, 999]}`
+	req, _ := http.NewRequest("POST", "/songs/delete", nil)
+	req.Body = createRequestBody(reqBody)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Should still return 200 OK
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	// Parse response
+	var resp map[string]json.RawMessage
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	dataRaw, ok := resp["data"]
+	if !ok {
+		t.Fatal("Expected 'data' field in response")
+	}
+
+	var result DeleteResult
+	if err := json.Unmarshal(dataRaw, &result); err != nil {
+		t.Fatalf("Failed to unmarshal result: %v", err)
+	}
+
+	if result.Total != 2 {
+		t.Errorf("Expected total 2, got %d", result.Total)
+	}
+	if result.Succeeded != 1 {
+		t.Errorf("Expected succeeded 1, got %d", result.Succeeded)
+	}
+	if result.Failed != 1 {
+		t.Errorf("Expected failed 1, got %d", result.Failed)
+	}
+}
+
+// Helper function to create test file
+func createTestFile(path string) error {
+	content := []byte("fake mp3 content")
+	return os.WriteFile(path, content, 0644)
+}
+
+func createRequestBody(content string) *requestBody {
+	return &requestBody{content: content}
+}
+
+type requestBody struct {
+	content string
+	pos     int
+}
+
+func (rb *requestBody) Read(p []byte) (int, error) {
+	if rb.pos >= len(rb.content) {
+		return 0, nil
+	}
+	n := copy(p, rb.content[rb.pos:])
+	rb.pos += n
+	return n, nil
+}
+
+func (rb *requestBody) Close() error {
+	return nil
+}
+
+// fileExists is a simple check for file existence
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 

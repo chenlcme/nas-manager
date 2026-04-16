@@ -4,7 +4,10 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"nas-manager/internal/repository"
@@ -13,6 +16,22 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+// DeleteResult - 批量删除结果
+type DeleteResult struct {
+	Total     int                 `json:"total"`
+	Succeeded int                 `json:"succeeded"`
+	Failed    int                 `json:"failed"`
+	Results   []SongDeleteResult `json:"results"`
+}
+
+// SongDeleteResult - 单个歌曲删除结果
+type SongDeleteResult struct {
+	ID       uint   `json:"id"`
+	FilePath string `json:"file_path"`
+	Status   string `json:"status"`
+	Error    string `json:"error,omitempty"`
+}
 
 // SongHandler - 歌曲相关 HTTP 处理
 type SongHandler struct {
@@ -56,4 +75,144 @@ func (h *SongHandler) GetSong(c *gin.Context) {
 
 	log.Printf("[SongHandler] GetSong id=%d success, duration=%v", id, time.Since(start))
 	response.Success(c, song)
+}
+
+// DeleteSongs - 批量删除歌曲
+// POST /api/songs/delete
+func (h *SongHandler) DeleteSongs(c *gin.Context) {
+	start := time.Now()
+
+	var req struct {
+		IDs []uint `json:"ids" binding:"required,min=1"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("[SongHandler] DeleteSongs invalid request: %v", err)
+		response.Error(c, http.StatusBadRequest, "VALIDATION_ERROR", "无效的请求参数")
+		return
+	}
+
+	log.Printf("[SongHandler] DeleteSongs count=%d", len(req.IDs))
+
+	result := &DeleteResult{
+		Total:     len(req.IDs),
+		Succeeded: 0,
+		Failed:    0,
+		Results:   make([]SongDeleteResult, 0, len(req.IDs)),
+	}
+
+	// Use mutex to protect results slice
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	// Process deletions concurrently with timeout control
+	for _, id := range req.IDs {
+		wg.Add(1)
+		go func(songID uint) {
+			defer wg.Done()
+
+			song, err := h.songRepo.GetByID(songID)
+			if err != nil {
+				log.Printf("[SongHandler] DeleteSongs song not found: id=%d", songID)
+				mu.Lock()
+				result.Results = append(result.Results, SongDeleteResult{
+					ID:     songID,
+					Status: "failed",
+					Error:  "song not found",
+				})
+				result.Failed++
+				mu.Unlock()
+				return
+			}
+
+			// Validate file path to prevent path traversal
+			cleanPath := filepath.Clean(song.FilePath)
+			if cleanPath != song.FilePath {
+				log.Printf("[SongHandler] DeleteSongs suspicious path detected: id=%d", songID)
+				mu.Lock()
+				result.Results = append(result.Results, SongDeleteResult{
+					ID:       songID,
+					FilePath: song.FilePath,
+					Status:   "failed",
+					Error:    "invalid file path",
+				})
+				result.Failed++
+				mu.Unlock()
+				return
+			}
+
+			// Delete file with timeout
+			deleteCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			done := make(chan error, 1)
+			go func() {
+				done <- os.Remove(song.FilePath)
+			}()
+
+			select {
+			case err := <-done:
+				if err != nil {
+					log.Printf("[SongHandler] DeleteSongs file deletion failed: id=%d", songID)
+					mu.Lock()
+					result.Results = append(result.Results, SongDeleteResult{
+						ID:       songID,
+						FilePath: song.FilePath,
+						Status:   "failed",
+						Error:    "file delete failed",
+					})
+					result.Failed++
+					mu.Unlock()
+					// 即使文件删除失败，仍然尝试删除数据库记录
+					if dbErr := h.songRepo.Delete(songID); dbErr != nil {
+						log.Printf("[SongHandler] DeleteSongs db record deletion failed: id=%d", songID)
+					}
+					return
+				}
+			case <-deleteCtx.Done():
+				log.Printf("[SongHandler] DeleteSongs file deletion timeout: id=%d", songID)
+				mu.Lock()
+				result.Results = append(result.Results, SongDeleteResult{
+					ID:       songID,
+					FilePath: song.FilePath,
+					Status:   "failed",
+					Error:    "file deletion timeout",
+				})
+				result.Failed++
+				mu.Unlock()
+				return
+			}
+
+			// 删除数据库记录
+			if err := h.songRepo.Delete(songID); err != nil {
+				log.Printf("[SongHandler] DeleteSongs db record deletion failed: id=%d", songID)
+				mu.Lock()
+				result.Results = append(result.Results, SongDeleteResult{
+					ID:       songID,
+					FilePath: song.FilePath,
+					Status:   "failed",
+					Error:    "db delete failed",
+				})
+				result.Failed++
+				mu.Unlock()
+				return
+			}
+
+			log.Printf("[SongHandler] DeleteSongs deleted: id=%d", songID)
+			mu.Lock()
+			result.Results = append(result.Results, SongDeleteResult{
+				ID:       songID,
+				FilePath: song.FilePath,
+				Status:   "deleted",
+			})
+			result.Succeeded++
+			mu.Unlock()
+		}(id)
+	}
+
+	wg.Wait()
+
+	log.Printf("[SongHandler] DeleteSongs completed: total=%d, succeeded=%d, failed=%d, duration=%v",
+		result.Total, result.Succeeded, result.Failed, time.Since(start))
+	response.Success(c, result)
 }
