@@ -31,3 +31,10 @@ export interface AlbumWithCount {
   artist: string;
   songCount: number;
 }
+
+// FolderWithCount - 文件夹及其歌曲数量
+export interface FolderWithCount {
+  id: number;
+  path: string;
+  songCount: number;
+}

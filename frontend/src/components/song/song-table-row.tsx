@@ -4,6 +4,7 @@ import { useSelection } from '../../contexts/selection-context';
 interface SongTableRowProps {
   song: Song;
   onPlay: (song: Song) => void;
+  showPath?: boolean; // 显示文件路径（用于文件夹视图）
 }
 
 // 格式化时长 (秒 -> mm:ss)
@@ -13,7 +14,7 @@ function formatDuration(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function SongTableRow({ song, onPlay }: SongTableRowProps) {
+export function SongTableRow({ song, onPlay, showPath }: SongTableRowProps) {
   const { isSelected, toggle } = useSelection();
   const selected = isSelected(song.id);
 
@@ -75,6 +76,13 @@ export function SongTableRow({ song, onPlay }: SongTableRowProps) {
       <td class="px-2 py-3 text-sm text-gray-500 w-20 truncate">
         {song.genre || '-'}
       </td>
+
+      {/* 文件路径 (仅文件夹视图显示) */}
+      {showPath && (
+        <td class="px-2 py-3 text-sm text-gray-400 truncate max-w-[200px]" title={song.filePath}>
+          {song.filePath}
+        </td>
+      )}
 
       {/* 时长 */}
       <td class="px-2 py-3 text-sm text-gray-500 w-14">
