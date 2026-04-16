@@ -216,3 +216,42 @@ func (h *SongHandler) DeleteSongs(c *gin.Context) {
 		result.Total, result.Succeeded, result.Failed, time.Since(start))
 	response.Success(c, result)
 }
+
+// SearchSongs - 按文件名搜索歌曲
+// GET /api/songs/search?q=keyword&limit=20&offset=0
+func (h *SongHandler) SearchSongs(c *gin.Context) {
+	start := time.Now()
+
+	keyword := c.Query("q")
+	if keyword == "" {
+		log.Printf("[SongHandler] SearchSongs missing query parameter 'q'")
+		response.Error(c, http.StatusBadRequest, "MISSING_QUERY", "搜索关键词不能为空")
+		return
+	}
+
+	// Parse pagination parameters
+	limit := 20 // default limit
+	offset := 0 // default offset
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			limit = l
+		}
+	}
+	if offsetStr := c.Query("offset"); offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+			offset = o
+		}
+	}
+
+	log.Printf("[SongHandler] SearchSongs keyword=%s limit=%d offset=%d", keyword, limit, offset)
+
+	songs, err := h.songRepo.SearchByFileName(keyword, limit, offset)
+	if err != nil {
+		log.Printf("[SongHandler] SearchSongs DB error: %v", err)
+		response.Error(c, http.StatusInternalServerError, "DB_ERROR", "数据库错误")
+		return
+	}
+
+	log.Printf("[SongHandler] SearchSongs keyword=%s found=%d duration=%v", keyword, len(songs), time.Since(start))
+	response.Success(c, songs)
+}

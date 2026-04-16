@@ -107,3 +107,103 @@ func TestSongRepository_GetByArtist(t *testing.T) {
 		t.Errorf("Expected 2 songs, got %d", len(found))
 	}
 }
+
+func TestSongRepository_SearchByFileName(t *testing.T) {
+	db := createSongTestDB(t)
+	repo := NewSongRepository(db)
+
+	// Create test songs
+	songs := []*model.Song{
+		{FilePath: "/music/rock/晴天.mp3", Title: "晴天"},
+		{FilePath: "/music/pop/夜曲.mp3", Title: "夜曲"},
+		{FilePath: "/music/rock/七里香.mp3", Title: "七里香"},
+		{FilePath: "/music/classic/梁祝.mp3", Title: "梁祝"},
+	}
+	for _, s := range songs {
+		repo.Create(s)
+	}
+
+	// Search by Chinese filename
+	results, err := repo.SearchByFileName("晴天", 20, 0)
+	if err != nil {
+		t.Fatalf("Failed to search: %v", err)
+	}
+	if len(results) != 1 {
+		t.Errorf("Expected 1 result, got %d", len(results))
+	}
+	if len(results) > 0 && results[0].Title != "晴天" {
+		t.Errorf("Expected title '晴天', got '%s'", results[0].Title)
+	}
+}
+
+func TestSongRepository_SearchByFileName_MultipleResults(t *testing.T) {
+	db := createSongTestDB(t)
+	repo := NewSongRepository(db)
+
+	// Create test songs - all in same folder
+	songs := []*model.Song{
+		{FilePath: "/music/周杰伦/晴天.mp3", Title: "晴天"},
+		{FilePath: "/music/周杰伦/夜曲.mp3", Title: "夜曲"},
+		{FilePath: "/music/周杰伦/七里香.mp3", Title: "七里香"},
+		{FilePath: "/music/林俊傑/江南.mp3", Title: "江南"},
+	}
+	for _, s := range songs {
+		repo.Create(s)
+	}
+
+	// Search by folder name (should match 3 songs)
+	results, err := repo.SearchByFileName("周杰伦", 20, 0)
+	if err != nil {
+		t.Fatalf("Failed to search: %v", err)
+	}
+	if len(results) != 3 {
+		t.Errorf("Expected 3 results, got %d", len(results))
+	}
+}
+
+func TestSongRepository_SearchByFileName_NoResults(t *testing.T) {
+	db := createSongTestDB(t)
+	repo := NewSongRepository(db)
+
+	// Create test songs
+	songs := []*model.Song{
+		{FilePath: "/music/rock/晴天.mp3", Title: "晴天"},
+		{FilePath: "/music/pop/夜曲.mp3", Title: "夜曲"},
+	}
+	for _, s := range songs {
+		repo.Create(s)
+	}
+
+	// Search for non-existent keyword
+	results, err := repo.SearchByFileName("不存在", 20, 0)
+	if err != nil {
+		t.Fatalf("Failed to search: %v", err)
+	}
+	if len(results) != 0 {
+		t.Errorf("Expected 0 results, got %d", len(results))
+	}
+}
+
+func TestSongRepository_SearchByFileName_EmptyKeyword(t *testing.T) {
+	db := createSongTestDB(t)
+	repo := NewSongRepository(db)
+
+	// Create test songs
+	songs := []*model.Song{
+		{FilePath: "/music/rock/晴天.mp3", Title: "晴天"},
+	}
+	for _, s := range songs {
+		repo.Create(s)
+	}
+
+	// Search with empty keyword - repository doesn't validate, handler rejects empty
+	// Repository just executes the query, so %% matches all (handler validates before calling)
+	results, err := repo.SearchByFileName("", 20, 0)
+	if err != nil {
+		t.Fatalf("Failed to search: %v", err)
+	}
+	// Repository behavior: empty keyword with %% matches all
+	if len(results) != 1 {
+		t.Errorf("Expected 1 result for empty keyword at repository level, got %d", len(results))
+	}
+}

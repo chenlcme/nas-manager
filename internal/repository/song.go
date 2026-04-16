@@ -94,3 +94,12 @@ func (r *SongRepository) GetByAlbum(album string) ([]model.Song, error) {
 	}
 	return songs, nil
 }
+
+// SearchByFileName - 根据文件名搜索歌曲（模糊匹配，带分页）
+func (r *SongRepository) SearchByFileName(keyword string, limit, offset int) ([]model.Song, error) {
+	var songs []model.Song
+	if err := r.db.Where("file_path LIKE ?", "%"+keyword+"%").Limit(limit).Offset(offset).Find(&songs).Error; err != nil {
+		return nil, err
+	}
+	return songs, nil
+}

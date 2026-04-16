@@ -123,6 +123,7 @@ func main() {
 		api.GET("/folders/:id/songs", folderHandler.GetFolderSongs)
 
 		// Song routes
+		api.GET("/songs/search", songHandler.SearchSongs)
 		api.GET("/songs/:id", songHandler.GetSong)
 		api.POST("/songs/delete", songHandler.DeleteSongs)
 	}

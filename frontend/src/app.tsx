@@ -3,7 +3,9 @@ import { SetupView } from './views/setup-view';
 import { ArtistsView } from './views/artists-view';
 import { AlbumsView } from './views/albums-view';
 import { FoldersView } from './views/folders-view';
+import { SearchResultsView } from './views/search-results-view';
 import { TabNav } from './components/common/tab-nav';
+import { SearchBar } from './components/common/search-bar';
 import { SongDetailPanel } from './components/song/song-detail-panel';
 import { SelectionProvider } from './contexts/selection-context';
 import { Song } from './types/song';
@@ -33,6 +35,8 @@ export function App() {
   const [detailSong, setDetailSong] = useState<Song | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
   const toastIdRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
   const fetchSongIdRef = useRef<number | null>(null);
@@ -152,6 +156,16 @@ export function App() {
     setDetailLoading(false);
   }
 
+  function handleSearch(keyword: string) {
+    setSearchKeyword(keyword);
+    setSearchLoading(true);
+  }
+
+  function handleBackFromSearch() {
+    setSearchKeyword('');
+    setSearchLoading(false);
+  }
+
   if (view === 'setup' || !setupStatus?.configured) {
     return <SetupView />;
   }
@@ -174,17 +188,28 @@ export function App() {
         </div>
 
         {/* 顶部 Tab 导航 */}
-        <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+        <div class="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white">
+          <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+          <div class="flex items-center">
+            <SearchBar onSearch={handleSearch} loading={searchLoading} />
+          </div>
+        </div>
 
         {/* 主内容区 */}
         <main class="flex-1 overflow-hidden">
-          {activeTab === 'artists' && (
+          {searchKeyword ? (
+            <SearchResultsView
+              keyword={searchKeyword}
+              onPlaySong={handlePlaySong}
+              onShowSongDetail={handleShowSongDetail}
+              onBatchEdit={handleBatchEdit}
+              onBack={handleBackFromSearch}
+            />
+          ) : activeTab === 'artists' ? (
             <ArtistsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} />
-          )}
-          {activeTab === 'albums' && (
+          ) : activeTab === 'albums' ? (
             <AlbumsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} />
-          )}
-          {activeTab === 'folders' && (
+          ) : (
             <FoldersView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} />
           )}
         </main>

@@ -6,6 +6,7 @@ interface SongTableRowProps {
   onPlay: (song: Song) => void;
   onShowDetail?: (song: Song) => void;
   showPath?: boolean; // 显示文件路径（用于文件夹视图）
+  highlightedText?: string | preact.JSX.Element; // 高亮文本（用于搜索结果）
 }
 
 // 格式化时长 (秒 -> mm:ss)
@@ -15,7 +16,7 @@ function formatDuration(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function SongTableRow({ song, onPlay, onShowDetail, showPath }: SongTableRowProps) {
+export function SongTableRow({ song, onPlay, onShowDetail, showPath, highlightedText }: SongTableRowProps) {
   const { isSelected, toggle } = useSelection();
   const selected = isSelected(song.id);
 
@@ -54,7 +55,7 @@ export function SongTableRow({ song, onPlay, onShowDetail, showPath }: SongTable
       {/* 歌名 */}
       <td class="px-2 py-3">
         <div class="font-medium text-gray-900 truncate max-w-[200px]">
-          {song.title || '未知歌曲'}
+          {highlightedText || song.title || '未知歌曲'}
         </div>
       </td>
 
