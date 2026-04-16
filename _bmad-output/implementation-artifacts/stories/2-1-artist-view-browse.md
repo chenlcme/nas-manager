@@ -1,6 +1,6 @@
 # Story 2.1: 歌手视图浏览
 
-Status: review
+Status: done
 
 ## Story
 
