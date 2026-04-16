@@ -1,6 +1,6 @@
 # Story 1.6: 增量扫描与全量扫描
 
-Status: review
+Status: done
 
 ## Story
 

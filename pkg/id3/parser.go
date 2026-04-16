@@ -228,6 +228,10 @@ func (p *Parser) decodeUTF16BE(data []byte) string {
 	if len(data) < 2 {
 		return ""
 	}
+	// 奇数长度时丢弃最后一个字节
+	if len(data)%2 != 0 {
+		data = data[:len(data)-1]
+	}
 	runes := make([]rune, 0, len(data)/2)
 	for i := 0; i < len(data)-1; i += 2 {
 		runes = append(runes, rune(data[i])<<8|rune(data[i+1]))
@@ -264,7 +268,9 @@ func (p *Parser) parseFLAC(file *os.File, metadata *MusicMetadata) {
 		} else if blockType == 6 {
 			// 图片块
 			pictureData := make([]byte, blockSize)
-			file.Read(pictureData)
+			if _, err := file.Read(pictureData); err != nil {
+				break
+			}
 			metadata.Cover = pictureData
 		} else {
 			file.Seek(int64(blockSize), io.SeekCurrent)
@@ -283,22 +289,30 @@ func (p *Parser) parseFLAC(file *os.File, metadata *MusicMetadata) {
 func (p *Parser) parseVorbisComment(file *os.File, metadata *MusicMetadata, blockSize int) {
 	// 跳过 vendor 长度和数据
 	vendorLen := make([]byte, 4)
-	file.Read(vendorLen)
+	if _, err := file.Read(vendorLen); err != nil {
+		return
+	}
 	vLen := int(vendorLen[0]) | int(vendorLen[1])<<8 | int(vendorLen[2])<<16 | int(vendorLen[3])<<24
 	file.Seek(int64(vLen), io.SeekCurrent)
 
 	// 读取评论数量
 	commentCountData := make([]byte, 4)
-	file.Read(commentCountData)
+	if _, err := file.Read(commentCountData); err != nil {
+		return
+	}
 	count := int(commentCountData[0]) | int(commentCountData[1])<<8 | int(commentCountData[2])<<16 | int(commentCountData[3])<<24
 
 	for i := 0; i < count; i++ {
 		lenData := make([]byte, 4)
-		file.Read(lenData)
+		if _, err := file.Read(lenData); err != nil {
+			break
+		}
 		commentLen := int(lenData[0]) | int(lenData[1])<<8 | int(lenData[2])<<16 | int(lenData[3])<<24
 
 		comment := make([]byte, commentLen)
-		file.Read(comment)
+		if _, err := file.Read(comment); err != nil {
+			break
+		}
 
 		// 解析 key=value 格式
 		if idx := bytesIndex(comment, '='); idx != -1 {
@@ -349,7 +363,9 @@ func (p *Parser) parseM4A(file *os.File, metadata *MusicMetadata) {
 func (p *Parser) parseWAV(file *os.File, metadata *MusicMetadata) {
 	// 读取 WAV 头部
 	header := make([]byte, 44)
-	file.Read(header)
+	if _, err := file.Read(header); err != nil {
+		return
+	}
 
 	// 解析采样率、位深、通道数计算时长
 	if string(header[0:4]) == "RIFF" && string(header[8:12]) == "WAVE" {

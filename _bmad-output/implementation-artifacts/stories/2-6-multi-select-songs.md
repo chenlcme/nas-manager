@@ -2,7 +2,7 @@
 
 **Story ID:** 2.6
 **Epic:** Epic 2 - 音乐库浏览与搜索
-**Status:** ready-for-dev
+**Status:** done
 **Created:** 2026-04-16
 
 ---

@@ -1,6 +1,6 @@
 # Story 1.7: 孤立记录清理与扫描异常处理
 
-Status: review
+Status: done
 
 ## Story
 

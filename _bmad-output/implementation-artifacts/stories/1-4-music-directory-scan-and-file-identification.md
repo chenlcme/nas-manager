@@ -1,6 +1,6 @@
 # Story 1.4: 音乐目录扫描与文件识别
 
-Status: review
+Status: done
 
 ## Story
 

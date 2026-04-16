@@ -1,6 +1,6 @@
 # Story 1.5: ID3 标签解析
 
-Status: review
+Status: done
 
 ## Story
 

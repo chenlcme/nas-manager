@@ -1,6 +1,6 @@
 # Story 1.3: 加密密码设置
 
-Status: review
+Status: done
 
 ## Story
 

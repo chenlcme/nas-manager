@@ -1,6 +1,6 @@
 # Story 2.8: 按文件名搜索
 
-Status: review
+Status: done
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 1.1: 项目基础结构与数据库模型
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

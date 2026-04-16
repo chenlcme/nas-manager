@@ -644,6 +644,43 @@ So that 通过歌曲信息找到目标歌曲。
 
 ---
 
+### Story 3.0: SQLite 连接池修复（技术准备）
+
+As a 开发者，
+I want 修复 SQLite 并发访问的连接池问题，
+So that 消除测试中的竞态条件并提升数据库稳定性。
+
+**Background:**
+
+Epic 1&2 的代码审查发现 `TestDeleteSongs_*` 测试存在竞态条件。SQLite :memory: 数据库在并发 GORM 连接访问时不稳定。此外，DeleteSongs handler 使用无缓冲 channel 实现超时控制存在 goroutine 泄漏风险。
+
+**Acceptance Criteria:**
+
+**Given** 当前代码库 **When** 运行 `TestDeleteSongs_*` 测试 **Then** 测试稳定通过，无竞态条件
+
+**And** 并发删除操作不会导致数据库连接错误
+
+---
+
+**Given** DeleteSongs handler **When** 执行文件删除超时 **Then** goroutine 不会阻塞泄漏
+
+**And** 使用带缓冲的 channel 正确处理超时
+
+---
+
+**Technical Implementation:**
+
+1. 评估 GORM SQLite 驱动的连接池配置
+2. 如需要，配置合理的最大连接数（`SetMaxOpenConns`/`SetMaxIdleConns`）
+3. 或考虑使用文件数据库（`:memory:` → 临时文件）进行测试
+4. 确保 DeleteSongs 的 channel 实现正确（已修复）
+
+**Dependencies:** 无
+
+**Estimated Effort:** 1 day
+
+---
+
 ### Story 3.1: 播放选中音乐
 
 As a 用户，

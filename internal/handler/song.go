@@ -153,48 +153,40 @@ func (h *SongHandler) DeleteSongs(c *gin.Context) {
 				return
 			}
 
-			// Delete file with timeout - use goroutine with explicit done channel
+			// Delete file with timeout - use buffered channel to prevent goroutine leak
 			deleteCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-
+			// Buffered channel so goroutine can exit even if we timeout
 			done := make(chan error, 1)
 			go func() {
 				done <- os.Remove(song.FilePath)
 			}()
 
-			// Use select with default to prevent goroutine leak on timeout
+			var removeErr error
 			select {
-			case err := <-done:
-				if err != nil {
-					log.Printf("[SongHandler] DeleteSongs file deletion failed: id=%d", songID)
-					mu.Lock()
-					result.Results = append(result.Results, SongDeleteResult{
-						ID:       songID,
-						FilePath: song.FilePath,
-						Status:   "failed",
-						Error:    "file delete failed",
-					})
-					result.Failed++
-					mu.Unlock()
-					// 即使文件删除失败，仍然尝试删除数据库记录
-					if dbErr := h.songRepo.Delete(songID); dbErr != nil {
-						log.Printf("[SongHandler] DeleteSongs db record deletion failed: id=%d", songID)
-					}
-					return
-				}
+			case removeErr = <-done:
+				// Operation completed
 			case <-deleteCtx.Done():
-				// Timeout occurred - the goroutine is still running but we no longer care
-				// It will exit when it tries to send on closed channel or ctx is cancelled
-				log.Printf("[SongHandler] DeleteSongs file deletion timeout: id=%d", songID)
+				// Timeout - the goroutine will eventually send and exit (buffered channel)
+				// We don't read from done, just use timeout error
+				removeErr = deleteCtx.Err()
+			}
+
+			if removeErr != nil {
+				log.Printf("[SongHandler] DeleteSongs file deletion failed: id=%d, err=%v", songID, removeErr)
 				mu.Lock()
 				result.Results = append(result.Results, SongDeleteResult{
 					ID:       songID,
 					FilePath: song.FilePath,
 					Status:   "failed",
-					Error:    "file deletion timeout",
+					Error:    "file delete failed",
 				})
 				result.Failed++
 				mu.Unlock()
+				// 即使文件删除失败，仍然尝试删除数据库记录
+				if dbErr := h.songRepo.Delete(songID); dbErr != nil {
+					log.Printf("[SongHandler] DeleteSongs db record deletion failed: id=%d", songID)
+				}
 				return
 			}
 

@@ -1,6 +1,6 @@
 # Story 1.2: 首次配置向导
 
-Status: review
+Status: done
 
 ## Story
 

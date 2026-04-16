@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-16T00:12:00Z
-last_updated: 2026-04-16T08:00:00Z
+last_updated: 2026-04-16T12:00:00Z
 project: nas-manager
 project_key: NOKEY
 tracking_system: file-system
@@ -54,20 +54,21 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: 音乐库浏览与搜索
-  epic-2: in-progress
+  epic-2: done
   2-1-artist-view-browse: done
   2-2-album-view-browse: done
   2-3-folder-view-browse: done
-  2-4-song-list-sorting: review
+  2-4-song-list-sorting: done
   2-5-view-song-details: done
-  2-6-multi-select-songs: review
-  2-7-delete-selected-music: review
-  2-8-search-by-filename: review
-  2-9-search-by-tag-content: review
+  2-6-multi-select-songs: done
+  2-7-delete-selected-music: done
+  2-8-search-by-filename: done
+  2-9-search-by-tag-content: done
   epic-2-retrospective: optional
 
   # Epic 3: 播放器与现场编辑
   epic-3: backlog
+  3-0-sqlite-connection-pool: backlog
   3-1-play-selected-music: backlog
   3-2-display-album-cover: backlog
   3-3-display-lyrics: backlog
