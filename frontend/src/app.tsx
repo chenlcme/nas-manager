@@ -2,6 +2,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { SetupView } from './views/setup-view';
 import { ArtistsView } from './views/artists-view';
 import { AlbumsView } from './views/albums-view';
+import { FoldersView } from './views/folders-view';
 import { TabNav } from './components/common/tab-nav';
 import { SelectionBar } from './components/common/selection-bar';
 import { SelectionProvider } from './contexts/selection-context';
@@ -71,9 +72,7 @@ export function App() {
             <AlbumsView onPlaySong={handlePlaySong} />
           )}
           {activeTab === 'folders' && (
-            <div class="flex items-center justify-center h-full text-gray-500">
-              文件夹视图 (Epic 2.3)
-            </div>
+            <FoldersView onPlaySong={handlePlaySong} />
           )}
         </main>
 
