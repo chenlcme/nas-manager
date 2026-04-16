@@ -103,3 +103,33 @@ func (r *SongRepository) SearchByFileName(keyword string, limit, offset int) ([]
 	}
 	return songs, nil
 }
+
+// SearchByTagContent - 根据标签内容搜索歌曲（模糊匹配标题、艺术家、专辑）
+func (r *SongRepository) SearchByTagContent(keyword string, limit, offset int) ([]model.Song, error) {
+	var songs []model.Song
+	// 使用 OR 条件搜索 title、artist、album 字段
+	err := r.db.Where("title LIKE ? OR artist LIKE ? OR album LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%").
+		Limit(limit).Offset(offset).Find(&songs).Error
+	if err != nil {
+		return nil, err
+	}
+	return songs, nil
+}
+
+// SearchByTagContentMulti - 根据标签内容搜索歌曲（多条件组合搜索）
+// 多个关键词用空格分隔，每个关键词必须在 title、artist、album 中的至少一个字段匹配
+func (r *SongRepository) SearchByTagContentMulti(keywords []string, limit, offset int) ([]model.Song, error) {
+	var songs []model.Song
+	query := r.db.Model(&model.Song{})
+
+	for _, kw := range keywords {
+		pattern := "%" + kw + "%"
+		// 每个关键词必须在 title、artist、album 中的至少一个字段匹配
+		query = query.Where("(title LIKE ? OR artist LIKE ? OR album LIKE ?)", pattern, pattern, pattern)
+	}
+
+	if err := query.Limit(limit).Offset(offset).Find(&songs).Error; err != nil {
+		return nil, err
+	}
+	return songs, nil
+}

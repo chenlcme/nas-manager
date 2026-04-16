@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import { SongTableRow } from '../components/song/song-table-row';
 import { Song } from '../types/song';
+import { SearchType } from '../components/common/search-bar';
 
 // Extract filename from full path (module-level utility)
 function getFileName(filePath: string): string {
@@ -16,6 +17,7 @@ function escapeRegExp(str: string): string {
 
 interface SearchResultsViewProps {
   keyword: string;
+  searchType: SearchType;
   onPlaySong: (song: Song) => void;
   onShowSongDetail: (song: Song) => void;
   onBatchEdit: () => void;
@@ -24,6 +26,7 @@ interface SearchResultsViewProps {
 
 export function SearchResultsView({
   keyword,
+  searchType,
   onPlaySong,
   onShowSongDetail,
   onBatchEdit,
@@ -46,7 +49,12 @@ export function SearchResultsView({
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    fetch(`/api/songs/search?q=${encodeURIComponent(keyword)}`, {
+    // Determine API endpoint based on search type
+    const apiUrl = searchType === 'tag'
+      ? `/api/songs/search/by-tag?q=${encodeURIComponent(keyword)}`
+      : `/api/songs/search?q=${encodeURIComponent(keyword)}`;
+
+    fetch(apiUrl, {
       signal: controller.signal,
     })
       .then((res) => {
@@ -74,9 +82,9 @@ export function SearchResultsView({
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [keyword]);
+  }, [keyword, searchType]);
 
-  // Highlight matching text in filename
+  // Highlight matching text in string
   const highlightMatch = useCallback((text: string, keyword: string): preact.JSX.Element => {
     if (!keyword) return <span>{text}</span>;
 
@@ -95,6 +103,30 @@ export function SearchResultsView({
       </span>
     );
   }, []);
+
+  // Get highlighted title text
+  const getHighlightedTitle = useCallback((song: Song): preact.JSX.Element => {
+    if (searchType === 'tag') {
+      return highlightMatch(song.title || getFileName(song.file_path), keyword);
+    }
+    return <span>{song.title || getFileName(song.file_path)}</span>;
+  }, [searchType, keyword, highlightMatch]);
+
+  // Get highlighted artist text
+  const getHighlightedArtist = useCallback((song: Song): preact.JSX.Element => {
+    if (searchType === 'tag') {
+      return highlightMatch(song.artist || '-', keyword);
+    }
+    return <span>{song.artist || '-'}</span>;
+  }, [searchType, keyword, highlightMatch]);
+
+  // Get highlighted album text
+  const getHighlightedAlbum = useCallback((song: Song): preact.JSX.Element => {
+    if (searchType === 'tag') {
+      return highlightMatch(song.album || '-', keyword);
+    }
+    return <span>{song.album || '-'}</span>;
+  }, [searchType, keyword, highlightMatch]);
 
   if (loading) {
     return (
@@ -195,7 +227,7 @@ export function SearchResultsView({
             <thead class="bg-gray-50 sticky top-0">
               <tr class="text-left text-xs text-gray-500 uppercase">
                 <th class="px-4 py-2 w-8"></th>
-                <th class="px-4 py-2">文件名</th>
+                <th class="px-4 py-2">歌曲</th>
                 <th class="px-4 py-2">歌手</th>
                 <th class="px-4 py-2">专辑</th>
                 <th class="px-4 py-2">时长</th>
@@ -203,14 +235,41 @@ export function SearchResultsView({
             </thead>
             <tbody>
               {results.map((song) => (
-                <SongTableRow
+                <tr
                   key={song.id}
-                  song={song}
-                  showPath={true}
-                  highlightedText={highlightMatch(getFileName(song.file_path), keyword)}
-                  onPlay={() => onPlaySong(song)}
-                  onShowDetail={() => onShowSongDetail(song)}
-                />
+                  class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => onShowSongDetail(song)}
+                >
+                  <td class="px-4 py-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPlaySong(song);
+                      }}
+                      class="p-1 hover:bg-green-100 rounded-full"
+                    >
+                      <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </button>
+                  </td>
+                  <td class="px-4 py-2">
+                    {searchType === 'filename' ? (
+                      highlightMatch(getFileName(song.file_path), keyword)
+                    ) : (
+                      getHighlightedTitle(song)
+                    )}
+                  </td>
+                  <td class="px-4 py-2 text-gray-600">
+                    {getHighlightedArtist(song)}
+                  </td>
+                  <td class="px-4 py-2 text-gray-600">
+                    {getHighlightedAlbum(song)}
+                  </td>
+                  <td class="px-4 py-2 text-gray-500 text-sm">
+                    {song.duration ? formatDuration(song.duration) : '-'}
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -218,4 +277,11 @@ export function SearchResultsView({
       </div>
     </div>
   );
+}
+
+// Format duration in seconds to mm:ss
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }

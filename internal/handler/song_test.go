@@ -697,6 +697,184 @@ func TestSearchSongs_EmptyQuery(t *testing.T) {
 	}
 }
 
+func TestSearchSongsByTag_Success(t *testing.T) {
+	db := setupTestDB(t)
+
+	// Create test songs with various tags
+	testSongs := []*model.Song{
+		{FilePath: "/music/rock/song1.mp3", Title: "晴天", Artist: "周杰伦", Album: "叶惠美"},
+		{FilePath: "/music/pop/song2.mp3", Title: "夜曲", Artist: "周杰伦", Album: "七里香"},
+		{FilePath: "/music/classic/song3.mp3", Title: "梁祝", Artist: "未知", Album: "民乐"},
+		{FilePath: "/music/pop/song4.mp3", Title: "江南", Artist: "林俊杰", Album: "编号89757"},
+	}
+	for _, song := range testSongs {
+		if err := db.Create(song).Error; err != nil {
+			t.Fatalf("Failed to create test song: %v", err)
+		}
+	}
+
+	// Setup handler
+	songRepo := repository.NewSongRepository(db)
+	handler := NewSongHandler(songRepo)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/songs/search/by-tag", handler.SearchSongsByTag)
+
+	// Search by title
+	req, _ := http.NewRequest("GET", "/songs/search/by-tag?q=晴天", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var resp map[string]json.RawMessage
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	dataRaw, _ := resp["data"]
+	var songs []model.Song
+	json.Unmarshal(dataRaw, &songs)
+
+	if len(songs) != 1 {
+		t.Errorf("Expected 1 song, got %d", len(songs))
+	}
+
+	// Search by artist
+	req, _ = http.NewRequest("GET", "/songs/search/by-tag?q=周杰伦", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	dataRaw, _ = resp["data"]
+	json.Unmarshal(dataRaw, &songs)
+
+	if len(songs) != 2 {
+		t.Errorf("Expected 2 songs for artist '周杰伦', got %d", len(songs))
+	}
+
+	// Search by album
+	req, _ = http.NewRequest("GET", "/songs/search/by-tag?q=叶惠美", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	dataRaw, _ = resp["data"]
+	json.Unmarshal(dataRaw, &songs)
+
+	if len(songs) != 1 {
+		t.Errorf("Expected 1 song for album '叶惠美', got %d", len(songs))
+	}
+}
+
+func TestSearchSongsByTag_MultiKeyword(t *testing.T) {
+	db := setupTestDB(t)
+
+	// Create test songs
+	testSongs := []*model.Song{
+		{FilePath: "/music/rock/song1.mp3", Title: "晴天", Artist: "周杰伦", Album: "叶惠美"},
+		{FilePath: "/music/pop/song2.mp3", Title: "夜曲", Artist: "周杰伦", Album: "七里香"},
+		{FilePath: "/music/classic/song3.mp3", Title: "梁祝", Artist: "未知", Album: "民乐"},
+	}
+	for _, song := range testSongs {
+		if err := db.Create(song).Error; err != nil {
+			t.Fatalf("Failed to create test song: %v", err)
+		}
+	}
+
+	// Setup handler
+	songRepo := repository.NewSongRepository(db)
+	handler := NewSongHandler(songRepo)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/songs/search/by-tag", handler.SearchSongsByTag)
+
+	// Multi-keyword search: "周杰伦" and "七里香"
+	req, _ := http.NewRequest("GET", "/songs/search/by-tag?q=周杰伦 七里香", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var resp map[string]json.RawMessage
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	dataRaw, _ := resp["data"]
+	var songs []model.Song
+	json.Unmarshal(dataRaw, &songs)
+
+	if len(songs) != 1 {
+		t.Errorf("Expected 1 song for multi-keyword search, got %d", len(songs))
+	}
+}
+
+func TestSearchSongsByTag_NoResults(t *testing.T) {
+	db := setupTestDB(t)
+
+	// Create test songs
+	testSong := &model.Song{FilePath: "/music/rock/晴天.mp3", Title: "晴天", Artist: "周杰伦"}
+	if err := db.Create(testSong).Error; err != nil {
+		t.Fatalf("Failed to create test song: %v", err)
+	}
+
+	songRepo := repository.NewSongRepository(db)
+	handler := NewSongHandler(songRepo)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/songs/search/by-tag", handler.SearchSongsByTag)
+
+	// Search for non-existent keyword
+	req, _ := http.NewRequest("GET", "/songs/search/by-tag?q=不存在", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var resp map[string]json.RawMessage
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	dataRaw, _ := resp["data"]
+	var songs []model.Song
+	json.Unmarshal(dataRaw, &songs)
+
+	if len(songs) != 0 {
+		t.Errorf("Expected 0 songs, got %d", len(songs))
+	}
+}
+
+func TestSearchSongsByTag_MissingQuery(t *testing.T) {
+	db := setupTestDB(t)
+	songRepo := repository.NewSongRepository(db)
+	handler := NewSongHandler(songRepo)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/songs/search/by-tag", handler.SearchSongsByTag)
+
+	// Missing query parameter
+	req, _ := http.NewRequest("GET", "/songs/search/by-tag", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected status %d, got %d", http.StatusBadRequest, w.Code)
+	}
+
+	var resp APIResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+
+	if resp.Error == nil {
+		t.Fatal("Expected error response")
+	}
+	if resp.Error.Code != "MISSING_QUERY" {
+		t.Errorf("Expected error code 'MISSING_QUERY', got '%s'", resp.Error.Code)
+	}
+}
+
 // Helper function to create test file
 func createTestFile(path string) error {
 	content := []byte("fake mp3 content")

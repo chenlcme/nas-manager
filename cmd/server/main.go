@@ -124,6 +124,7 @@ func main() {
 
 		// Song routes
 		api.GET("/songs/search", songHandler.SearchSongs)
+		api.GET("/songs/search/by-tag", songHandler.SearchSongsByTag)
 		api.GET("/songs/:id", songHandler.GetSong)
 		api.POST("/songs/delete", songHandler.DeleteSongs)
 	}

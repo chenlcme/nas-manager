@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
+	"nas-manager/internal/model"
 	"nas-manager/internal/repository"
 	"nas-manager/pkg/response"
 
@@ -253,5 +255,56 @@ func (h *SongHandler) SearchSongs(c *gin.Context) {
 	}
 
 	log.Printf("[SongHandler] SearchSongs keyword=%s found=%d duration=%v", keyword, len(songs), time.Since(start))
+	response.Success(c, songs)
+}
+
+// SearchSongsByTag - 按标签内容搜索歌曲（标题、艺术家、专辑）
+// GET /api/songs/search/by-tag?q=keyword&limit=20&offset=0
+func (h *SongHandler) SearchSongsByTag(c *gin.Context) {
+	start := time.Now()
+
+	keyword := c.Query("q")
+	if keyword == "" {
+		log.Printf("[SongHandler] SearchSongsByTag missing query parameter 'q'")
+		response.Error(c, http.StatusBadRequest, "MISSING_QUERY", "搜索关键词不能为空")
+		return
+	}
+
+	// Parse pagination parameters
+	limit := 20 // default limit
+	offset := 0 // default offset
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			limit = l
+		}
+	}
+	if offsetStr := c.Query("offset"); offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+			offset = o
+		}
+	}
+
+	log.Printf("[SongHandler] SearchSongsByTag keyword=%s limit=%d offset=%d", keyword, limit, offset)
+
+	// 检查是否包含空格，支持多条件组合搜索
+	keywords := strings.Fields(keyword)
+	var songs []model.Song
+	var err error
+
+	if len(keywords) > 1 {
+		// 多关键词搜索
+		songs, err = h.songRepo.SearchByTagContentMulti(keywords, limit, offset)
+	} else {
+		// 单关键词搜索
+		songs, err = h.songRepo.SearchByTagContent(keyword, limit, offset)
+	}
+
+	if err != nil {
+		log.Printf("[SongHandler] SearchSongsByTag DB error: %v", err)
+		response.Error(c, http.StatusInternalServerError, "DB_ERROR", "数据库错误")
+		return
+	}
+
+	log.Printf("[SongHandler] SearchSongsByTag keyword=%s found=%d duration=%v", keyword, len(songs), time.Since(start))
 	response.Success(c, songs)
 }

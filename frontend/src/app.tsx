@@ -5,7 +5,7 @@ import { AlbumsView } from './views/albums-view';
 import { FoldersView } from './views/folders-view';
 import { SearchResultsView } from './views/search-results-view';
 import { TabNav } from './components/common/tab-nav';
-import { SearchBar } from './components/common/search-bar';
+import { SearchBar, SearchType } from './components/common/search-bar';
 import { SongDetailPanel } from './components/song/song-detail-panel';
 import { SelectionProvider } from './contexts/selection-context';
 import { Song } from './types/song';
@@ -36,6 +36,7 @@ export function App() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchType, setSearchType] = useState<SearchType>('tag');
   const [searchLoading, setSearchLoading] = useState(false);
   const toastIdRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -156,8 +157,9 @@ export function App() {
     setDetailLoading(false);
   }
 
-  function handleSearch(keyword: string) {
+  function handleSearch(keyword: string, searchType: SearchType) {
     setSearchKeyword(keyword);
+    setSearchType(searchType);
     setSearchLoading(true);
   }
 
@@ -200,6 +202,7 @@ export function App() {
           {searchKeyword ? (
             <SearchResultsView
               keyword={searchKeyword}
+              searchType={searchType}
               onPlaySong={handlePlaySong}
               onShowSongDetail={handleShowSongDetail}
               onBatchEdit={handleBatchEdit}

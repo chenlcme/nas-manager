@@ -62,8 +62,8 @@ development_status:
   2-5-view-song-details: done
   2-6-multi-select-songs: review
   2-7-delete-selected-music: review
-  2-8-search-by-filename: backlog
-  2-9-search-by-tag-content: backlog
+  2-8-search-by-filename: review
+  2-9-search-by-tag-content: review
   epic-2-retrospective: optional
 
   # Epic 3: 播放器与现场编辑
