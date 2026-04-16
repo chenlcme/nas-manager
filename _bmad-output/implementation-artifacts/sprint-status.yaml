@@ -56,7 +56,7 @@ development_status:
   # Epic 2: 音乐库浏览与搜索
   epic-2: in-progress
   2-1-artist-view-browse: done
-  2-2-album-view-browse: backlog
+  2-2-album-view-browse: done
   2-3-folder-view-browse: backlog
   2-4-song-list-sorting: backlog
   2-5-view-song-details: backlog

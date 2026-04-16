@@ -23,3 +23,11 @@ export interface ArtistWithCount {
   name: string;
   songCount: number;
 }
+
+// AlbumWithCount - 专辑及其歌曲数量
+export interface AlbumWithCount {
+  id: number;
+  name: string;
+  artist: string;
+  songCount: number;
+}
