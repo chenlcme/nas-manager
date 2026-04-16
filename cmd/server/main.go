@@ -72,6 +72,7 @@ func main() {
 	// Initialize repositories
 	settingRepo := repository.NewSettingRepository(db)
 	songRepo := repository.NewSongRepository(db)
+	artistRepo := repository.NewArtistRepository(db)
 
 	// Initialize services
 	settingService := service.NewSettingService(settingRepo)
@@ -83,6 +84,7 @@ func main() {
 	scanHandler := handler.NewScanHandler(scannerService, songRepo, settingRepo)
 	encryptService := service.NewEncryptService(settingRepo)
 	encryptHandler := handler.NewEncryptHandler(encryptService)
+	artistHandler := handler.NewArtistHandler(artistRepo)
 
 	// Setup Gin router
 	r := gin.Default()
@@ -102,6 +104,10 @@ func main() {
 		api.POST("/auth/setup", encryptHandler.SetupPassword)
 		api.POST("/auth/verify", encryptHandler.VerifyPassword)
 		api.POST("/auth/change", encryptHandler.ChangePassword)
+
+		// Artist routes
+		api.GET("/artists", artistHandler.GetArtists)
+		api.GET("/artists/:id/songs", artistHandler.GetArtistSongs)
 	}
 
 	fmt.Println("nas-manager server starting on :8080...")
