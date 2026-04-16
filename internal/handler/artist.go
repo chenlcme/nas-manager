@@ -36,13 +36,32 @@ func (h *ArtistHandler) GetArtists(c *gin.Context) {
 }
 
 // GetArtistSongs - 获取特定艺术家的歌曲列表
-// GET /api/artists/:id/songs
+// GET /api/artists/:id/songs?sort_by=title&order=asc
 func (h *ArtistHandler) GetArtistSongs(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_ARTIST_ID", "无效的艺术家ID")
 		return
+	}
+
+	// 获取排序参数
+	sortBy := c.Query("sort_by")
+	order := c.Query("order")
+
+	// 校验 sort_by 参数
+	validSortFields := map[string]bool{
+		"title":     true,
+		"duration":   true,
+		"created_at": true,
+	}
+	validOrders := map[string]bool{"asc": true, "desc": true}
+
+	if !validSortFields[sortBy] {
+		sortBy = "title"
+	}
+	if !validOrders[order] {
+		order = "asc"
 	}
 
 	// 通过 ID 获取艺术家名（ID 是动态分配的，基于艺术家列表顺序）
@@ -52,7 +71,7 @@ func (h *ArtistHandler) GetArtistSongs(c *gin.Context) {
 		return
 	}
 
-	songs, err := h.artistRepo.GetSongsByArtist(artistName)
+	songs, err := h.artistRepo.GetSongsByArtist(artistName, sortBy, order)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "GET_ARTIST_SONGS_FAILED", "获取艺术家歌曲失败")
 		return

@@ -1,6 +1,8 @@
-import { useState, useEffect, Fragment } from 'preact/hooks';
+import { useState, useEffect, useRef, Fragment } from 'preact/hooks';
 import { AlbumWithCount, Song } from '../types/song';
 import { SongTableRow } from '../components/song/song-table-row';
+import { SortSelector } from '../components/common/sort-selector';
+import { DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER, SORT_BY_PARAM, ORDER_PARAM, SortField, SortOrder, REQUEST_TIMEOUT_MS } from '../constants/sort';
 
 interface AlbumsViewProps {
   onPlaySong: (song: Song) => void;
@@ -13,6 +15,19 @@ export function AlbumsView({ onPlaySong }: AlbumsViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [orderAsc, setOrderAsc] = useState(false);
+  // 歌曲排序状态
+  const [songSortBy, setSongSortBy] = useState<SortField>(DEFAULT_SORT_FIELD);
+  const [songOrder, setSongOrder] = useState<SortOrder>(DEFAULT_SORT_ORDER);
+  // 展开时显示 loading
+  const [loadingSongs, setLoadingSongs] = useState(false);
+  // 排序切换时显示 loading
+  const [sorting, setSorting] = useState(false);
+  // 用于取消旧请求
+  const abortControllerRef = useRef<AbortController | null>(null);
+  // 用于防止竞态的请求 ID
+  const requestIdRef = useRef<number>(0);
+  // 防抖定时器
+  const debounceTimerRef = useRef<number | null>(null);
 
   // 获取专辑列表
   useEffect(() => {
@@ -20,7 +35,18 @@ export function AlbumsView({ onPlaySong }: AlbumsViewProps) {
     setError('');
     setExpandedAlbum(null); // 排序切换时清除展开状态
     setAlbumSongs([]);
+    setSorting(false);
     fetchAlbums();
+
+    return () => {
+      // 组件卸载时取消所有待处理的请求和定时器
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (debounceTimerRef.current !== null) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [orderAsc]);
 
   async function fetchAlbums() {
@@ -45,22 +71,111 @@ export function AlbumsView({ onPlaySong }: AlbumsViewProps) {
     if (expandedAlbum === albumId) {
       setExpandedAlbum(null);
       setAlbumSongs([]);
+      setLoadingSongs(false);
+      setSorting(false);
+      setError('');
+      // 重置排序状态
+      setSongSortBy(DEFAULT_SORT_FIELD);
+      setSongOrder(DEFAULT_SORT_ORDER);
       return;
+    }
+
+    // 取消之前的请求
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    // 清除防抖定时器
+    if (debounceTimerRef.current !== null) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
     }
 
     setExpandedAlbum(albumId);
     setAlbumSongs([]); // 清除之前的歌曲列表
+    setLoadingSongs(true);
+    setError('');
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const currentRequestId = ++requestIdRef.current;
+
     try {
-      const res = await fetch(`/api/albums/${albumId}/songs`);
+      const url = `/api/albums/${albumId}/songs?${SORT_BY_PARAM}=${encodeURIComponent(songSortBy)}&${ORDER_PARAM}=${encodeURIComponent(songOrder)}`;
+      const res = await fetchWithTimeout(url, { signal: controller.signal }, REQUEST_TIMEOUT_MS);
+      if (currentRequestId !== requestIdRef.current) return; // 请求已过时
       if (!res.ok) {
         throw new Error('获取歌曲列表失败');
       }
       const data = await res.json();
       setAlbumSongs(data.data || []);
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        // 请求被取消，忽略
+        return;
+      }
+      if (currentRequestId !== requestIdRef.current) return; // 请求已过时
       setError(err instanceof Error ? err.message : '获取歌曲列表失败');
       setExpandedAlbum(null);
       setAlbumSongs([]);
+    } finally {
+      if (currentRequestId === requestIdRef.current) {
+        setLoadingSongs(false);
+      }
+    }
+  }
+
+  // 歌曲排序变化时重新获取歌曲（带防抖）
+  function handleSongSortChange(newSortBy: SortField, newOrder: SortOrder) {
+    setSongSortBy(newSortBy);
+    setSongOrder(newOrder);
+    if (expandedAlbum !== null) {
+      // 清除之前的防抖定时器
+      if (debounceTimerRef.current !== null) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        // 取消之前的请求
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
+
+        setSorting(true);
+        setError(''); // 清除之前的错误
+
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+        const currentRequestId = ++requestIdRef.current;
+
+        const url = `/api/albums/${expandedAlbum}/songs?${SORT_BY_PARAM}=${encodeURIComponent(newSortBy)}&${ORDER_PARAM}=${encodeURIComponent(newOrder)}`;
+        fetchWithTimeout(url, { signal: controller.signal }, REQUEST_TIMEOUT_MS)
+          .then((res) => {
+            if (currentRequestId !== requestIdRef.current) return null;
+            if (!res.ok) {
+              throw new Error('获取歌曲列表失败');
+            }
+            return res.json();
+          })
+          .then((data) => {
+            if (data && currentRequestId === requestIdRef.current) {
+              setAlbumSongs(data.data || []);
+              setError(''); // 成功获取后清除错误状态
+            }
+          })
+          .catch((err) => {
+            if (err instanceof Error && err.name === 'AbortError') {
+              // 请求被取消，忽略
+              return;
+            }
+            if (currentRequestId !== requestIdRef.current) return;
+            setError(err instanceof Error ? err.message : '获取歌曲列表失败');
+          })
+          .finally(() => {
+            if (currentRequestId === requestIdRef.current) {
+              setSorting(false);
+            }
+          });
+      }, 300); // 300ms 防抖
     }
   }
 
@@ -150,42 +265,58 @@ export function AlbumsView({ onPlaySong }: AlbumsViewProps) {
                   {expandedAlbum === album.id && (
                     <tr key={`${album.id}-songs`}>
                       <td colSpan={4} class="bg-gray-50 px-4 py-2">
-                        <table class="w-full">
-                          <thead>
-                            <tr>
-                              <th class="w-8 px-2"></th>
-                              <th class="w-12 px-2"></th>
-                              <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                歌名
-                              </th>
-                              <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                艺术家
-                              </th>
-                              <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                专辑
-                              </th>
-                              <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                年份
-                              </th>
-                              <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                流派
-                              </th>
-                              <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                时长
-                              </th>
-                              <th class="w-12 px-2"></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {albumSongs.map((song) => (
-                              <SongTableRow
-                                key={song.id}
-                                song={song}
-                                onPlay={onPlaySong}
-                              />
-                            ))}
-                          </tbody>
-                        </table>
+                        {/* 排序控制 */}
+                        <div class="flex items-center justify-end mb-2">
+                          <SortSelector
+                            sortBy={songSortBy}
+                            order={songOrder}
+                            onSortChange={handleSongSortChange}
+                          />
+                        </div>
+                        {/* 展开/排序时的 loading 状态 */}
+                        {(loadingSongs || sorting) && (
+                          <div class="flex items-center justify-center py-4 text-gray-500">
+                            {loadingSongs ? '加载中...' : '排序中...'}
+                          </div>
+                        )}
+                        {!loadingSongs && !sorting && (
+                          <table class="w-full">
+                            <thead>
+                              <tr>
+                                <th class="w-8 px-2"></th>
+                                <th class="w-12 px-2"></th>
+                                <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  歌名
+                                </th>
+                                <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  艺术家
+                                </th>
+                                <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  专辑
+                                </th>
+                                <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  年份
+                                </th>
+                                <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  流派
+                                </th>
+                                <th class="px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  时长
+                                </th>
+                                <th class="w-12 px-2"></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {albumSongs.map((song) => (
+                                <SongTableRow
+                                  key={song.id}
+                                  song={song}
+                                  onPlay={onPlaySong}
+                                />
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
                       </td>
                     </tr>
                   )}
@@ -197,4 +328,20 @@ export function AlbumsView({ onPlaySong }: AlbumsViewProps) {
       </div>
     </div>
   );
+}
+
+// 带超时的 fetch 辅助函数
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }

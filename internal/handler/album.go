@@ -36,13 +36,32 @@ func (h *AlbumHandler) GetAlbums(c *gin.Context) {
 }
 
 // GetAlbumSongs - 获取特定专辑的歌曲列表
-// GET /api/albums/:id/songs
+// GET /api/albums/:id/songs?sort_by=title&order=asc
 func (h *AlbumHandler) GetAlbumSongs(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_ALBUM_ID", "无效的专辑ID")
 		return
+	}
+
+	// 获取排序参数
+	sortBy := c.Query("sort_by")
+	order := c.Query("order")
+
+	// 校验 sort_by 参数
+	validSortFields := map[string]bool{
+		"title":     true,
+		"duration":   true,
+		"created_at": true,
+	}
+	validOrders := map[string]bool{"asc": true, "desc": true}
+
+	if !validSortFields[sortBy] {
+		sortBy = "title"
+	}
+	if !validOrders[order] {
+		order = "asc"
 	}
 
 	// 通过 ID 获取专辑名和艺术家名（ID 是动态分配的，基于专辑列表顺序）
@@ -52,7 +71,7 @@ func (h *AlbumHandler) GetAlbumSongs(c *gin.Context) {
 		return
 	}
 
-	songs, err := h.albumRepo.GetSongsByAlbum(albumName, artistName)
+	songs, err := h.albumRepo.GetSongsByAlbum(albumName, artistName, sortBy, order)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "GET_ALBUM_SONGS_FAILED", "获取专辑歌曲失败")
 		return

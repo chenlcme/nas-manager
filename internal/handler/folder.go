@@ -36,13 +36,32 @@ func (h *FolderHandler) GetFolders(c *gin.Context) {
 }
 
 // GetFolderSongs - 获取特定文件夹的歌曲列表
-// GET /api/folders/:id/songs
+// GET /api/folders/:id/songs?sort_by=title&order=asc
 func (h *FolderHandler) GetFolderSongs(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_FOLDER_ID", "无效的文件夹ID")
 		return
+	}
+
+	// 获取排序参数
+	sortBy := c.Query("sort_by")
+	order := c.Query("order")
+
+	// 校验 sort_by 参数
+	validSortFields := map[string]bool{
+		"title":     true,
+		"duration":   true,
+		"created_at": true,
+	}
+	validOrders := map[string]bool{"asc": true, "desc": true}
+
+	if !validSortFields[sortBy] {
+		sortBy = "title"
+	}
+	if !validOrders[order] {
+		order = "asc"
 	}
 
 	// 通过 ID 获取文件夹路径（ID 是动态分配的，基于文件夹列表顺序）
@@ -52,7 +71,7 @@ func (h *FolderHandler) GetFolderSongs(c *gin.Context) {
 		return
 	}
 
-	songs, err := h.folderRepo.GetSongsByFolder(folderPath)
+	songs, err := h.folderRepo.GetSongsByFolder(folderPath, sortBy, order)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "GET_FOLDER_SONGS_FAILED", "获取文件夹歌曲失败")
 		return
