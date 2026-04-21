@@ -4,7 +4,7 @@ import { useSelection } from '../contexts/selection-context';
 import { SongTableRow } from '../components/song/song-table-row';
 import { SortSelector } from '../components/common/sort-selector';
 import { SelectionBar } from '../components/common/selection-bar';
-import { DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER, SORT_BY_PARAM, ORDER_PARAM, SortField, SortOrder, REQUEST_TIMEOUT_MS } from '../constants/sort';
+import { DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER, SORT_BY_PARAM, ORDER_PARAM, FOLDER_PARAM, SortField, SortOrder, REQUEST_TIMEOUT_MS } from '../constants/sort';
 
 interface SongsViewProps {
   onPlaySong: (song: Song) => void;
@@ -20,6 +20,7 @@ export function SongsView({ onPlaySong, onShowSongDetail, onBatchEdit, playingSo
   const [error, setError] = useState('');
   const [sortBy, setSortBy] = useState<SortField>(DEFAULT_SORT_FIELD);
   const [order, setOrder] = useState<SortOrder>(DEFAULT_SORT_ORDER);
+  const [folderFilter, setFolderFilter] = useState<string | null>(null);
   const [sorting, setSorting] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef<number>(0);
@@ -38,7 +39,7 @@ export function SongsView({ onPlaySong, onShowSongDetail, onBatchEdit, playingSo
         abortControllerRef.current.abort();
       }
     };
-  }, [sortBy, order]);
+  }, [sortBy, order, folderFilter]);
 
   async function fetchSongs() {
     // 取消之前的请求
@@ -55,7 +56,10 @@ export function SongsView({ onPlaySong, onShowSongDetail, onBatchEdit, playingSo
     const currentRequestId = ++requestIdRef.current;
 
     try {
-      const url = `/api/songs?${SORT_BY_PARAM}=${encodeURIComponent(sortBy)}&${ORDER_PARAM}=${encodeURIComponent(order)}`;
+      let url = `/api/songs?${SORT_BY_PARAM}=${encodeURIComponent(sortBy)}&${ORDER_PARAM}=${encodeURIComponent(order)}`;
+      if (folderFilter) {
+        url += `&${FOLDER_PARAM}=${encodeURIComponent(folderFilter)}`;
+      }
       const res = await fetchWithTimeout(url, { signal: controller.signal }, REQUEST_TIMEOUT_MS);
       if (currentRequestId !== requestIdRef.current) return;
       if (!res.ok) {
@@ -84,6 +88,16 @@ export function SongsView({ onPlaySong, onShowSongDetail, onBatchEdit, playingSo
     setOrder(newOrder);
   }
 
+  // 文件夹筛选
+  function handleFolderFilter(folder: string) {
+    setFolderFilter(folder);
+  }
+
+  // 清除筛选
+  function handleClearFilter() {
+    setFolderFilter(null);
+  }
+
   if (loading) {
     return (
       <div class="flex items-center justify-center py-12">
@@ -102,6 +116,21 @@ export function SongsView({ onPlaySong, onShowSongDetail, onBatchEdit, playingSo
 
   return (
     <div class="flex flex-col h-full">
+      {/* 筛选状态提示 */}
+      {folderFilter && (
+        <div class="px-4 py-2 bg-green-50 border-b border-green-200 flex items-center justify-between">
+          <span class="text-sm text-green-700">
+            当前筛选：<span class="font-mono">{folderFilter}</span>
+          </span>
+          <button
+            onClick={handleClearFilter}
+            class="text-sm text-green-600 hover:text-green-800 underline"
+          >
+            清除筛选
+          </button>
+        </div>
+      )}
+
       {/* 排序控制 */}
       <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200">
         <span class="text-sm text-gray-600">
@@ -166,6 +195,7 @@ export function SongsView({ onPlaySong, onShowSongDetail, onBatchEdit, playingSo
                     song={song}
                     onPlay={onPlaySong}
                     onShowDetail={onShowSongDetail}
+                    onFolderClick={handleFolderFilter}
                     showDir={true}
                     playingSongId={playingSongId}
                   />

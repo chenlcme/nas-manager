@@ -13,6 +13,7 @@ export const DEFAULT_SORT_ORDER: SortOrder = 'asc';
 // API parameter names
 export const SORT_BY_PARAM = 'sort_by';
 export const ORDER_PARAM = 'order';
+export const FOLDER_PARAM = 'folder';
 
 // Validate sort field
 export function isValidSortField(field: string): field is SortField {

@@ -66,8 +66,6 @@ func main() {
 	// Auto-migrate all models
 	if err := db.AutoMigrate(
 		&model.Song{},
-		&model.Artist{},
-		&model.Album{},
 		&model.Setting{},
 		&model.BatchOperation{},
 	); err != nil {
@@ -79,8 +77,6 @@ func main() {
 	// Initialize repositories
 	settingRepo := repository.NewSettingRepository(db)
 	songRepo := repository.NewSongRepository(db)
-	artistRepo := repository.NewArtistRepository(db)
-	albumRepo := repository.NewAlbumRepository(db)
 	folderRepo := repository.NewFolderRepository(db)
 	batchRepo := repository.NewBatchRepository(db)
 
@@ -94,8 +90,6 @@ func main() {
 	scanHandler := handler.NewScanHandler(scannerService, songRepo, settingRepo)
 	encryptService := service.NewEncryptService(settingRepo)
 	encryptHandler := handler.NewEncryptHandler(encryptService)
-	artistHandler := handler.NewArtistHandler(artistRepo)
-	albumHandler := handler.NewAlbumHandler(albumRepo)
 	folderHandler := handler.NewFolderHandler(folderRepo)
 	songHandler := handler.NewSongHandler(songRepo)
 	batchHandler := handler.NewBatchHandler(songRepo, batchRepo)
@@ -192,14 +186,6 @@ func main() {
 		api.POST("/auth/setup", encryptHandler.SetupPassword)
 		api.POST("/auth/verify", encryptHandler.VerifyPassword)
 		api.POST("/auth/change", encryptHandler.ChangePassword)
-
-		// Artist routes
-		api.GET("/artists", artistHandler.GetArtists)
-		api.GET("/artists/:id/songs", artistHandler.GetArtistSongs)
-
-		// Album routes
-		api.GET("/albums", albumHandler.GetAlbums)
-		api.GET("/albums/:id/songs", albumHandler.GetAlbumSongs)
 
 		// Folder routes
 		api.GET("/folders", folderHandler.GetFolders)

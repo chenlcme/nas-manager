@@ -76,6 +76,45 @@ func (r *SongRepository) GetAllSorted(sortBy, order string) ([]model.Song, error
 	return songs, nil
 }
 
+// GetAllSortedWithFolder - 获取指定文件夹下的所有歌曲并排序
+func (r *SongRepository) GetAllSortedWithFolder(folder, sortBy, order string) ([]model.Song, error) {
+	var songs []model.Song
+
+	// Validate sort field
+	validSortFields := map[string]bool{
+		"title":      true,
+		"duration":   true,
+		"created_at": true,
+	}
+	if !validSortFields[sortBy] {
+		sortBy = "title"
+	}
+
+	// Validate order
+	if order != "asc" && order != "desc" {
+		order = "asc"
+	}
+
+	// 规范化路径分隔符
+	folder = strings.ReplaceAll(folder, "\\", "/")
+	folder = strings.TrimSuffix(folder, "/")
+
+	// 构建查询
+	var query *gorm.DB
+	if folder == "" || folder == "/" {
+		// 根目录：匹配 folder 为空或 "/" 的歌曲
+		query = r.db.Where("folder = '' OR folder = '/'")
+	} else {
+		// 子目录：精确匹配 folder 字段
+		query = r.db.Where("folder = ?", folder)
+	}
+
+	if err := query.Order(sortBy + " " + order).Find(&songs).Error; err != nil {
+		return nil, err
+	}
+	return songs, nil
+}
+
 // GetByID - 根据ID获取歌曲
 func (r *SongRepository) GetByID(id uint) (*model.Song, error) {
 	var song model.Song

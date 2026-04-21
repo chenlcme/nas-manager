@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
 import { SetupView } from './views/setup-view';
-import { ArtistsView } from './views/artists-view';
-import { AlbumsView } from './views/albums-view';
-import { FoldersView } from './views/folders-view';
+import { SongsView } from './views/songs-view';
 import { SearchResultsView } from './views/search-results-view';
-import { TabNav } from './components/common/tab-nav';
 import { SearchBar, SearchType } from './components/common/search-bar';
 import { SongDetailPanel } from './components/song/song-detail-panel';
 import { SidePlayer } from './components/player/side-player';
@@ -13,7 +10,6 @@ import { SelectionProvider } from './contexts/selection-context';
 import { Song } from './types/song';
 
 type View = 'setup' | 'main';
-type Tab = 'artists' | 'albums' | 'folders';
 
 interface SetupStatus {
   configured: boolean;
@@ -30,7 +26,6 @@ const REQUEST_TIMEOUT_MS = 10000;
 
 export function App() {
   const [view, setView] = useState<View>('setup');
-  const [activeTab, setActiveTab] = useState<Tab>('artists');
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [detailSong, setDetailSong] = useState<Song | null>(null);
@@ -215,9 +210,9 @@ export function App() {
           ))}
         </div>
 
-        {/* 顶部 Tab 导航 */}
+        {/* 顶部搜索和扫描栏 */}
         <div class="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white">
-          <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+          <h1 class="text-lg font-medium text-gray-800">音乐库</h1>
           <div class="flex items-center gap-2">
             <button
               onClick={handleScan}
@@ -240,7 +235,7 @@ export function App() {
           </div>
         </div>
 
-        {/* 主内容区 */}
+        {/* 主内容区 - 单一平铺列表 */}
         <main class="flex-1 overflow-hidden">
           {searchKeyword ? (
             <SearchResultsView
@@ -252,12 +247,13 @@ export function App() {
               onBack={handleBackFromSearch}
               playingSongId={currentSong?.id ?? null}
             />
-          ) : activeTab === 'artists' ? (
-            <ArtistsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} playingSongId={currentSong?.id ?? null} />
-          ) : activeTab === 'albums' ? (
-            <AlbumsView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} playingSongId={currentSong?.id ?? null} />
           ) : (
-            <FoldersView onPlaySong={handlePlaySong} onShowSongDetail={handleShowSongDetail} onBatchEdit={handleBatchEdit} playingSongId={currentSong?.id ?? null} />
+            <SongsView
+              onPlaySong={handlePlaySong}
+              onShowSongDetail={handleShowSongDetail}
+              onBatchEdit={handleBatchEdit}
+              playingSongId={currentSong?.id ?? null}
+            />
           )}
         </main>
 

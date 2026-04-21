@@ -2,6 +2,7 @@
 export interface Song {
   id: number;
   filePath: string;
+  folder: string; // 文件夹路径
   title: string;
   artist: string;
   album: string;

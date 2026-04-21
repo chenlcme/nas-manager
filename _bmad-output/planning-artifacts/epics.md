@@ -7,6 +7,10 @@ inputDocuments:
   - "/home/chenlichao/workspace/nas-manager/_bmad-output/planning-artifacts/prd.md"
   - "/home/chenlichao/workspace/nas-manager/_bmad-output/planning-artifacts/architecture.md"
   - "/home/chenlichao/workspace/nas-manager/_bmad-output/planning-artifacts/ux-design-specification.md"
+lastUpdated: '2026-04-21'
+updateHistory:
+  - date: '2026-04-21'
+    changes: '移除歌手/专辑视图相关Story，更新为单一平铺列表（含文件夹列）；重构Story 2.x'
 ---
 
 # nas-manager - Epic Breakdown
@@ -26,26 +30,24 @@ FR4: 系统可以将解析后的元数据存储到 SQLite 数据库
 FR5: 用户可以触发重新扫描（支持增量扫描和全量扫描，增量扫描依据文件创建时间和最后修改时间判定）
 FR6: 系统可以检测并清理孤岛记录（文件已删除但数据库仍有记录）
 FR7: 系统可以处理扫描异常（文件损坏、权限不足、网络超时），并向用户报告
-FR8: 用户可以按歌手视图浏览音乐库
-FR9: 用户可以按专辑视图浏览音乐库
-FR10: 用户可以按文件夹结构浏览音乐库
-FR11: 用户可以在浏览视图中按名称/时长/添加时间排序
-FR12: 用户可以查看单曲的详细信息（ID3标签/封面/歌词）
-FR13: 用户可以在列表中多选多个音乐文件
-FR14: 用户可以删除选中的音乐文件（同时删除文件和数据库记录）
-FR15: 用户可以播放选中的音乐文件（点一首播一首，无播放队列）
-FR16: 播放器可以展示专辑封面图片
-FR17: 播放器可以展示歌词（同步或静态）
-FR18: 播放器可以展示播放时间信息
-FR19: 用户在播放过程中可以直接编辑当前歌曲的标签/封面/歌词
-FR20: 用户可以批量修改选中音乐的标签（艺术家/专辑/标题等）
-FR21: 用户可以批量修改选中音乐的封面图片
-FR22: 用户可以搜索并批量应用歌词（系统按文件名分隔的词片段在线搜索歌词，搜索失败时用户可手动重试，API来源在实现时确定）
-FR23: 系统支持依次撤销批量编辑操作（每次撤销一个批量记录）
-FR24: 用户可以按文件名搜索音乐
-FR25: 用户可以按 ID3 标签内容搜索音乐
-FR26: 用户可以设置加密密码，系统基于密码生成加密密钥
-FR27: 系统可以在首次访问时引导用户完成基础配置（设置音乐目录和SQLite存储路径两步完成）
+FR8: 用户可以在平铺列表中浏览音乐库，列表包含文件夹列
+FR9: 用户可以在浏览视图中按名称/时长/添加时间排序
+FR10: 用户可以查看单曲的详细信息（ID3标签/封面/歌词）
+FR11: 用户可以在列表中多选多个音乐文件
+FR12: 用户可以删除选中的音乐文件（同时删除文件和数据库记录）
+FR13: 用户可以播放选中的音乐文件（点一首播一首，无播放队列）
+FR14: 播放器可以展示专辑封面图片
+FR15: 播放器可以展示歌词（同步或静态）
+FR16: 播放器可以展示播放时间信息
+FR17: 用户在播放过程中可以直接编辑当前歌曲的标签/封面/歌词
+FR18: 用户可以批量修改选中音乐的标签（艺术家/专辑/标题等）
+FR19: 用户可以批量修改选中音乐的封面图片
+FR20: 用户可以搜索并批量应用歌词（系统按文件名分隔的词片段在线搜索歌词，搜索失败时用户可手动重试，API来源在实现时确定）
+FR21: 系统支持依次撤销批量编辑操作（每次撤销一个批量记录）
+FR22: 用户可以按文件名搜索音乐
+FR23: 用户可以按 ID3 标签内容搜索音乐
+FR24: 用户可以设置加密密码，系统基于密码生成加密密钥
+FR25: 系统可以在首次访问时引导用户完成基础配置（设置音乐目录和SQLite存储路径两步完成）
 
 ### NonFunctional Requirements
 
@@ -79,12 +81,12 @@ NFR12: 浏览器支持 - Chrome（桌面端 + 移动端）
 
 ### UX Design Requirements
 
-UX-DR1: 实现 SongTableRow 组件 - 高密度歌曲表格行，包含选择复选框、封面缩略图(40x40px)、歌名、艺术家、专辑、年份、流派、时长、操作菜单
+UX-DR1: 实现 SongTableRow 组件 - 高密度歌曲表格行，包含选择复选框、封面缩略图(40x40px)、歌名、艺术家、专辑、文件夹、年份、流派、时长、操作菜单
 UX-DR2: 实现 SideEditPanel 组件 - 右侧滑入批量编辑面板，宽度320px，包含已选中歌曲预览、编辑字段表单（专辑/艺术家/年份/风格）、预览区域、操作按钮；字段留空=保持不变
 UX-DR3: 实现 SidePlayer 组件 - 右侧固定播放器区域，展示封面大图(200x200px)、歌名/艺术家/专辑、播放进度条、播放控制（上一首/播放暂停/下一首）、歌词显示、编辑按钮
 UX-DR4: 实现 SelectionBar 组件 - 固定在列表上方，显示已选中数量、全选/取消全选、批量编辑按钮、取消选择
 UX-DR5: 实现 Toast 提示组件 - 右上角显示，成功(绿色)、错误(红色)、警告(橙色)，3秒自动消失
-UX-DR6: 实现顶部 Tab 导航 - 歌手/专辑/文件夹切换，当前项深色文字+底部2px主色条
+UX-DR6: 实现文件夹筛选导航 - 文件夹列可点击筛选，筛选状态在顶部显示「当前筛选：path/to/folder」+「清除」按钮
 UX-DR7: 实现首次配置向导 - 两步完成：设置音乐目录和SQLite存储路径
 UX-DR8: 色彩系统实现 - 主题绿色#22C55E、蓝色#3B82F6、橙色#F97316、白色#FFFFFF、浅绿底色#F0FDF4、深色文字#1E293B、次要文字#64748B
 UX-DR9: 字体系统实现 - 中文字体：思源黑体/Noto Sans CJK、英文字体：Inter、等宽字体：JetBrains Mono/SF Mono
@@ -101,26 +103,24 @@ FR4: Epic 1 - 存储到 SQLite
 FR5: Epic 1 - 增量/全量扫描
 FR6: Epic 1 - 清理孤岛记录
 FR7: Epic 1 - 扫描异常处理
-FR8: Epic 2 - 按歌手视图浏览
-FR9: Epic 2 - 按专辑视图浏览
-FR10: Epic 2 - 按文件夹浏览
-FR11: Epic 2 - 排序
-FR12: Epic 2 - 查看单曲详情
-FR13: Epic 2 - 多选音乐文件
-FR14: Epic 2 - 删除选中音乐
-FR15: Epic 3 - 播放选中音乐
-FR16: Epic 3 - 展示专辑封面
-FR17: Epic 3 - 展示歌词
-FR18: Epic 3 - 展示播放时间
-FR19: Epic 3 - 播放中编辑元数据
-FR20: Epic 4 - 批量修改标签
-FR21: Epic 4 - 批量修改封面
-FR22: Epic 4 - 搜索并批量应用歌词
-FR23: Epic 4 - 撤销批量编辑
-FR24: Epic 2 - 按文件名搜索
-FR25: Epic 2 - 按标签搜索
-FR26: Epic 1 - 设置加密密码
-FR27: Epic 1 - 首次配置引导
+FR8: Epic 2 - 平铺列表浏览（含文件夹列）
+FR9: Epic 2 - 排序
+FR10: Epic 2 - 查看单曲详情
+FR11: Epic 2 - 多选音乐文件
+FR12: Epic 2 - 删除选中音乐
+FR13: Epic 3 - 播放选中音乐
+FR14: Epic 3 - 展示专辑封面
+FR15: Epic 3 - 展示歌词
+FR16: Epic 3 - 展示播放时间
+FR17: Epic 3 - 播放中编辑元数据
+FR18: Epic 4 - 批量修改标签
+FR19: Epic 4 - 批量修改封面
+FR20: Epic 4 - 搜索并批量应用歌词
+FR21: Epic 4 - 撤销批量编辑
+FR22: Epic 2 - 按文件名搜索
+FR23: Epic 2 - 按标签搜索
+FR24: Epic 1 - 设置加密密码
+FR25: Epic 1 - 首次配置引导
 
 ## Epic List
 
@@ -128,25 +128,25 @@ FR27: Epic 1 - 首次配置引导
 
 用户可以完成基础配置，导入音乐目录并扫描所有音乐文件到数据库。
 
-**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR6, FR7, FR26, FR27
+**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR6, FR7, FR24, FR25
 
 ### Epic 2: 音乐库浏览与搜索
 
-用户可以高效浏览、搜索和组织音乐库中的音乐。
+用户可以通过单一平铺列表高效浏览、搜索和组织音乐库中的音乐，列表包含文件夹列并支持按文件夹筛选。
 
-**FRs covered:** FR8, FR9, FR10, FR11, FR12, FR13, FR14, FR24, FR25
+**FRs covered:** FR8, FR9, FR10, FR11, FR12, FR22, FR23
 
 ### Epic 3: 播放器与现场编辑
 
 用户可以播放音乐并在播放过程中查看和编辑元数据。
 
-**FRs covered:** FR15, FR16, FR17, FR18, FR19
+**FRs covered:** FR13, FR14, FR15, FR16, FR17
 
 ### Epic 4: 批量编辑与撤销
 
 用户可以高效批量修改元数据并支持撤销操作。
 
-**FRs covered:** FR20, FR21, FR22, FR23
+**FRs covered:** FR18, FR19, FR20, FR21
 
 ---
 
@@ -178,11 +178,7 @@ So that 为后续功能开发提供坚实基础。
 
 **Given** 项目结构已建立
 **When** 开发者创建 GORM 数据模型
-**Then** 创建 Song 模型（ID、FilePath、Title、Artist、Album、Year、Genre、TrackNum、Duration、CoverPath、Lyrics、FileHash、FileSize、CreatedAt、UpdatedAt）
-
-**And** 创建 Artist 模型（ID、Name）
-
-**And** 创建 Album 模型（ID、Name、Artist）
+**Then** 创建 Song 模型（ID、FilePath、Folder、Title、Artist、Album、Year、Genre、TrackNum、Duration、CoverPath、Lyrics、FileHash、FileSize、CreatedAt、UpdatedAt）
 
 **And** 创建 Setting 模型（Key、Value）
 
@@ -402,79 +398,69 @@ So that 保证数据库与实际文件系统一致，并给用户清晰的错误
 
 ## Epic 2: 音乐库浏览与搜索
 
-用户可以高效浏览、搜索和组织音乐库中的音乐。
+用户可以通过单一平铺列表高效浏览、搜索和组织音乐库中的音乐，列表包含文件夹列并支持按文件夹筛选。
 
-**FRs covered:** FR8, FR9, FR10, FR11, FR12, FR13, FR14, FR24, FR25
+**FRs covered:** FR8, FR9, FR10, FR11, FR12, FR22, FR23
 
 **相关 UX-DRs：**
-- UX-DR1: SongTableRow 组件
+- UX-DR1: SongTableRow 组件（含文件夹列）
 - UX-DR4: SelectionBar 组件
-- UX-DR6: 顶部 Tab 导航
+- UX-DR6: 文件夹筛选导航
 - UX-DR11: 响应式布局
 
 ---
 
-### Story 2.1: 歌手视图浏览
+### Story 2.1: 单一平铺列表浏览
 
 As a 用户，
-I want 按歌手视图浏览音乐库，
-So that 快速找到特定艺术家的所有歌曲。
+I want 在单一平铺列表中浏览音乐库，列表包含文件夹列，
+So that 直观地看到所有歌曲及其所在文件夹。
 
 **Acceptance Criteria:**
 
-**Given** 用户切换到"歌手" Tab
-**When** 系统加载歌手视图
-**Then** 按歌手名分组显示所有歌曲
+**Given** 用户访问音乐库页面
+**When** 系统加载歌曲列表
+**Then** 显示单一平铺列表，无多视图切换
 
-**And** 每组显示歌手名和歌曲数量
+**And** 表格列包含：选择、封面、歌名、艺术家、专辑、文件夹、年份、流派、时长、操作
 
-**And** 点击歌手组展开显示该艺术家所有歌曲
+**And** 文件夹列显示相对路径（如 "albums/2024/"）
 
-**And** 支持按歌手名排序（升序/降序）
+**And** 桌面端：完整表格视图（≥1024px）
+
+**And** 平板端：表格视图，列宽自适应（768-1023px）
+
+**And** 手机端：卡片视图，每张卡片显示关键信息（<768px）
 
 ---
 
-### Story 2.2: 专辑视图浏览
+### Story 2.2: 按文件夹筛选歌曲
 
 As a 用户，
-I want 按专辑视图浏览音乐库，
-So that 快速找到特定专辑的所有歌曲。
+I want 点击文件夹列来筛选该目录下的歌曲，
+So that 快速定位同一文件夹中的音乐。
 
 **Acceptance Criteria:**
 
-**Given** 用户切换到"专辑" Tab
-**When** 系统加载专辑视图
-**Then** 按专辑名分组显示所有歌曲
+**Given** 用户在歌曲列表中
+**When** 用户点击某首歌的文件夹路径
+**Then** 筛选显示该文件夹下的所有歌曲
 
-**And** 每组显示专辑名、艺术家名和歌曲数量
+**And** 列表顶部显示「当前筛选：path/to/folder」
 
-**And** 点击专辑组展开显示该专辑所有歌曲
-
-**And** 支持按专辑名排序（升序/降序）
+**And** 显示「清除」按钮
 
 ---
 
-### Story 2.3: 文件夹视图浏览
+**Given** 筛选状态已激活
+**When** 用户点击「清除」按钮
+**Then** 清除筛选，显示完整列表
 
-As a 用户，
-I want 按文件夹结构浏览音乐库，
-So that 按照文件系统组织查看音乐。
-
-**Acceptance Criteria:**
-
-**Given** 用户切换到"文件夹" Tab
-**When** 系统加载文件夹视图
-**Then** 按音乐目录的文件夹结构显示
-
-**And** 显示文件夹路径和包含的歌曲数量
-
-**And** 点击文件夹展开显示其中的歌曲
-
-**And** 显示文件在磁盘上的实际路径
+**And** 顶部筛选提示消失
 
 ---
 
-### Story 2.4: 歌曲列表排序
+### Story 2.3: 歌曲列表排序
 
 As a 用户，
 I want 在浏览视图中对歌曲列表排序，
@@ -490,13 +476,15 @@ So that 按照我关心的方式组织音乐。
 
 **And** 支持按添加时间排序
 
+**And** 支持按文件夹路径排序
+
 **And** 支持升序/降序切换
 
 **And** 排序选项在列表顶部显示
 
 ---
 
-### Story 2.5: 查看单曲详情
+### Story 2.4: 查看单曲详情
 
 As a 用户，
 I want 查看单曲的详细信息，
@@ -518,7 +506,7 @@ So that 了解歌曲的完整元数据。
 
 ---
 
-### Story 2.6: 多选歌曲文件
+### Story 2.5: 多选歌曲文件
 
 As a 用户，
 I want 在列表中多选多个音乐文件，
@@ -552,7 +540,7 @@ So that 对批量歌曲进行操作。
 
 ---
 
-### Story 2.7: 删除选中音乐
+### Story 2.6: 删除选中音乐
 
 As a 用户，
 I want 删除选中的音乐文件，
@@ -592,7 +580,7 @@ So that 清理不需要的歌曲（同时删除文件和数据库记录）。
 
 ---
 
-### Story 2.8: 按文件名搜索
+### Story 2.7: 按文件名搜索
 
 As a 用户，
 I want 按文件名搜索音乐，
@@ -612,7 +600,7 @@ So that 快速找到特定文件。
 
 ---
 
-### Story 2.9: 按标签内容搜索
+### Story 2.8: 按标签内容搜索
 
 As a 用户，
 I want 按 ID3 标签内容搜索音乐，
@@ -636,7 +624,7 @@ So that 通过歌曲信息找到目标歌曲。
 
 用户可以播放音乐并在播放过程中查看和编辑元数据。
 
-**FRs covered:** FR15, FR16, FR17, FR18, FR19
+**FRs covered:** FR13, FR14, FR15, FR16, FR17
 
 **相关 UX-DRs：**
 - UX-DR3: SidePlayer 组件
@@ -825,7 +813,7 @@ So that 边听边验证边修改，高效完成元数据整理。
 
 用户可以高效批量修改元数据并支持撤销操作。
 
-**FRs covered:** FR20, FR21, FR22, FR23
+**FRs covered:** FR18, FR19, FR20, FR21
 
 **相关 UX-DRs：**
 - UX-DR2: SideEditPanel 组件

@@ -10,6 +10,10 @@ date: '2026-04-15'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-04-16'
+lastUpdated: '2026-04-21'
+updateHistory:
+  - date: '2026-04-21'
+    changes: '移除歌手/专辑视图，简化为单一平铺列表；更新 API 端点；重构数据模型'
 ---
 
 # Architecture Decision Document
@@ -22,11 +26,11 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 **Functional Requirements:**
 - **FR1-7 音乐扫描与导入**: 目录遍历、ID3解析、SQLite存储、增量扫描、异常处理
-- **FR8-14 音乐浏览与组织**: 歌手/专辑/文件夹视图、多选、排序、详情查看、删除
-- **FR15-19 播放器与现场编辑**: 点播播放、封面/歌词/时间展示、播放中编辑元数据
-- **FR20-23 批量编辑**: 批量修改标签/封面/歌词、在线歌词搜索、撤销支持
-- **FR24-25 搜索**: 按文件名/标签搜索
-- **FR26-27 系统设置**: 加密密码、首次配置引导
+- **FR8-12 音乐浏览与组织**: 单一平铺列表（含文件夹列）、多选、排序、详情查看、删除
+- **FR13-17 播放器与现场编辑**: 点播播放、封面/歌词/时间展示、播放中编辑元数据
+- **FR18-21 批量编辑**: 批量修改标签/封面/歌词、在线歌词搜索、撤销支持
+- **FR22-23 搜索**: 按文件名/标签搜索
+- **FR24-25 系统设置**: 加密密码、首次配置引导
 
 **Non-Functional Requirements:**
 - **性能**: 启动≤3秒、二进制≤50MB、UI响应≤200ms、1000首扫描≤10分钟
@@ -229,6 +233,7 @@ clean:
 type Song struct {
     ID        uint      `gorm:"primaryKey"`
     FilePath  string    `gorm:"uniqueIndex;not null"`
+    Folder    string    `gorm:"index"` // 文件夹路径，用于分组浏览
     Title     string
     Artist    string
     Album     string
@@ -242,19 +247,6 @@ type Song struct {
     FileSize  int64
     CreatedAt time.Time
     UpdatedAt time.Time
-}
-
-// Artist - 艺术家（冗余存储用于快速查询）
-type Artist struct {
-    ID   uint   `gorm:"primaryKey"`
-    Name string `gorm:"uniqueIndex;not null"`
-}
-
-// Album - 专辑（冗余存储用于快速查询）
-type Album struct {
-    ID     uint   `gorm:"primaryKey"`
-    Name   string `gorm:"index"`
-    Artist string
 }
 
 // Setting - 应用配置（存储在 SQLite 中）
@@ -313,13 +305,11 @@ func Decrypt(ciphertext, key []byte) ([]byte, error) {
 
 ### API & Communication Patterns
 
-**API 设计: 混合模式**
+**API 设计: 扁平模式**
 
 | 资源 | 风格 | 理由 |
 |------|------|------|
-| `/songs` | 扁平 | 简单列表查询 |
-| `/artists` | 扁平 | 简单列表查询 |
-| `/albums` | 扁平 | 简单列表查询 |
+| `/songs` | 扁平 | 单一平铺列表，支持按文件夹筛选 |
 | `/songs/:id` | 扁平 | 单个资源操作 |
 | `/songs/:id/lyrics` | 嵌套 | 歌词是歌曲的子资源 |
 | `/batch` | 扁平 | 批量操作端点 |
@@ -328,16 +318,12 @@ func Decrypt(ciphertext, key []byte) ([]byte, error) {
 **主要 API 端点：**
 
 ```
-GET    /api/songs              # 列表（支持分页、筛选）
+GET    /api/songs              # 列表（支持分页、筛选、按文件夹分组）
 GET    /api/songs/:id          # 单曲详情
 PUT    /api/songs/:id          # 更新单曲
 DELETE /api/songs/:id          # 删除单曲
 POST   /api/songs/scan         # 触发扫描
-
-GET    /api/artists            # 艺术家列表
-GET    /api/artists/:id/songs  # 艺术家的歌曲
-
-GET    /api/albums             # 专辑列表
+GET    /api/folders            # 获取文件夹列表
 
 POST   /api/batch/update       # 批量更新
 POST   /api/batch/delete       # 批量删除
@@ -493,7 +479,7 @@ nas-manager/
 ├── internal/
 │   ├── handler/              # HTTP handlers
 │   │   ├── song.go           # 歌曲相关 handlers
-│   │   ├── artist.go         # 艺术家相关 handlers
+│   │   ├── folder.go         # 文件夹相关 handlers
 │   │   ├── batch.go          # 批量操作 handlers
 │   │   └── setting.go        # 设置 handlers
 │   ├── service/              # 业务逻辑
@@ -503,12 +489,10 @@ nas-manager/
 │   │   └── lyrics.go         # 歌词搜索服务
 │   ├── repository/           # 数据访问层
 │   │   ├── song.go
-│   │   ├── artist.go
-│   │   ├── album.go
+│   │   ├── folder.go
 │   │   └── setting.go
 │   └── model/                # 数据模型
 │       ├── song.go
-│       ├── artist.go
 │       └── setting.go
 ├── pkg/
 │   ├── crypto/               # 加密工具包
@@ -525,13 +509,15 @@ nas-manager/
 │   │   │   │   └── lyrics.tsx
 │   │   │   ├── edit/
 │   │   │   │   └── batch-edit.tsx
+│   │   │   ├── song/
+│   │   │   │   ├── song-table.tsx
+│   │   │   │   └── song-row.tsx
 │   │   │   └── common/
 │   │   │       ├── toast.tsx
 │   │   │       └── loading.tsx
 │   │   ├── views/            # 页面视图
-│   │   │   ├── songs.tsx
-│   │   │   ├── artists.tsx
-│   │   │   └── settings.tsx
+│   │   │   ├── songs-view.tsx
+│   │   │   └── settings-view.tsx
 │   │   ├── contexts/         # Preact Context
 │   │   │   ├── player.tsx
 │   │   │   ├── selection.tsx
@@ -671,8 +657,7 @@ nas-manager/
 ├── internal/
 │   ├── handler/                # HTTP handlers (Gin)
 │   │   ├── song.go            # 歌曲 CRUD
-│   │   ├── artist.go          # 艺术家查询
-│   │   ├── album.go           # 专辑查询
+│   │   ├── folder.go          # 文件夹查询
 │   │   ├── batch.go           # 批量操作
 │   │   ├── setting.go         # 设置管理
 │   │   ├── auth.go            # 认证
@@ -685,14 +670,11 @@ nas-manager/
 │   │   └── setting.go         # 设置业务逻辑
 │   ├── repository/             # 数据访问层
 │   │   ├── song.go            # 歌曲数据访问
-│   │   ├── artist.go          # 艺术家数据访问
-│   │   ├── album.go           # 专辑数据访问
+│   │   ├── folder.go          # 文件夹数据访问
 │   │   ├── batch.go           # 批量操作记录
 │   │   └── setting.go         # 设置数据访问
 │   └── model/                  # 数据模型
 │       ├── song.go             # Song 模型 + GORM tag
-│       ├── artist.go          # Artist 模型
-│       ├── album.go           # Album 模型
 │       ├── batch.go           # BatchOperation 模型
 │       └── setting.go         # Setting 模型
 ├── pkg/                        # 公共工具包
@@ -717,7 +699,7 @@ nas-manager/
 │   │   │   │   ├── edit-field.tsx     # 编辑字段组件
 │   │   │   │   └── edit-preview.tsx   # 编辑预览
 │   │   │   ├── song/
-│   │   │   │   ├── song-table.tsx     # 歌曲列表表格
+│   │   │   │   ├── song-table.tsx     # 歌曲列表表格（含文件夹列）
 │   │   │   │   ├── song-row.tsx       # 歌曲行
 │   │   │   │   └── song-checkbox.tsx   # 选择框
 │   │   │   └── common/
@@ -726,10 +708,7 @@ nas-manager/
 │   │   │       ├── modal.tsx          # 模态框
 │   │   │       └── spinner.tsx        # 旋转指示器
 │   │   ├── views/              # 页面视图
-│   │   │   ├── songs-view.tsx        # 歌曲列表页
-│   │   │   ├── artists-view.tsx      # 艺术家页
-│   │   │   ├── albums-view.tsx       # 专辑页
-│   │   │   ├── folders-view.tsx      # 文件夹视图
+│   │   │   ├── songs-view.tsx        # 单一平铺列表页（含文件夹筛选）
 │   │   │   ├── settings-view.tsx     # 设置页
 │   │   │   └── setup-view.tsx       # 首次配置向导
 │   │   ├── contexts/          # Preact Context
@@ -745,7 +724,7 @@ nas-manager/
 │   │   │   ├── formatters.ts       # 格式化工具
 │   │   │   └── constants.ts        # 常量定义
 │   │   ├── types/             # TypeScript 类型
-│   │   │   ├── song.ts             # Song 类型定义
+│   │   │   ├── song.ts             # Song 类型定义（含 folder 字段）
 │   │   │   ├── api.ts              # API 响应类型
 │   │   │   └── context.ts          # Context 类型
 │   │   ├── app.tsx           # Preact 应用入口
@@ -761,8 +740,7 @@ nas-manager/
 ├── embed/
 │   └── static/               # Go embed 静态文件
 │       ├── index.html        # 嵌入式 HTML
-│       ├── assets/           # 编译后的 JS/CSS
-│       └── htmx/            # HTMX 片段
+│       └── assets/           # 编译后的 JS/CSS
 ├── migrations/                # 数据库迁移
 │   └── 001_initial.sql      # 初始数据库结构
 ├── Dockerfile                # Docker 多平台构建
@@ -820,9 +798,10 @@ Preact 状态驱动 DOM 更新
 
 | Service | 职责 | 依赖 |
 |---------|------|------|
-| scanner.go | 遍历目录、解析 ID3 | id3/parser.go |
+| scanner.go | 遍历目录、解析 ID3、提取文件夹路径 | id3/parser.go |
 | encrypt.go | AES-256-GCM 加密/解密 | pkg/crypto |
-| song.go | 歌曲 CRUD | repository |
+| song.go | 歌曲 CRUD、按文件夹筛选 | repository |
+| folder.go | 文件夹列表提取 | repository/song.go |
 | batch.go | 批量操作 + 撤销 | repository, song.go |
 | setting.go | 配置读写 | repository |
 
@@ -830,35 +809,33 @@ Preact 状态驱动 DOM 更新
 
 | Model | 存储内容 | 访问层 |
 |-------|---------|--------|
-| Song | 音乐元数据 | repository/song.go |
-| Artist | 艺术家名 | repository/artist.go |
-| Album | 专辑信息 | repository/album.go |
+| Song | 音乐元数据（含 folder 字段） | repository/song.go |
 | Setting | 应用配置 | repository/setting.go |
 | BatchOperation | 批量操作记录 | repository/batch.go |
 
 ### Requirements to Structure Mapping
 
 **FR1-7 音乐扫描与导入 → scanner.go + id3/parser.go**
-- scanner.go: 目录遍历、文件发现
+- scanner.go: 目录遍历、文件发现、提取文件夹路径
 - id3/parser.go: ID3 标签解析
-- repository/song.go: 元数据存储
+- repository/song.go: 元数据存储（含 folder 字段）
 
-**FR8-14 音乐浏览与组织 → handler/song.go + handler/artist.go + handler/album.go**
-- 视图切换 (歌手/专辑/文件夹)
-- 列表排序、多选
+**FR8-12 音乐浏览与组织 → handler/song.go + handler/folder.go**
+- 单一平铺列表（含文件夹列）
+- 按文件夹筛选、排序、多选
 
-**FR15-19 播放器与现场编辑 → player/* components**
+**FR13-17 播放器与现场编辑 → player/* components**
 - PlayerContext: 播放状态
 - player.tsx: 播放器组件
 - lyrics.tsx: 歌词展示
 
-**FR20-23 批量编辑 → batch.go + edit/* components**
+**FR18-21 批量编辑 → batch.go + edit/* components**
 - batch.go: 批量逻辑 + 撤销
 - batch-edit-panel.tsx: 编辑面板
 
-**FR24-25 搜索 → handler/song.go (带筛选参数)**
+**FR22-23 搜索 → handler/song.go (带筛选参数)**
 
-**FR26-27 系统设置 → handler/setting.go + setup-view.tsx**
+**FR24-25 系统设置 → handler/setting.go + setup-view.tsx**
 
 ### Integration Points
 
@@ -922,6 +899,31 @@ frontend/songs-view.tsx 展示
 | HTMX 测试困难 | 移除 HTMX，改为纯 Preact 组件 |
 | 手写加密实现风险 | 改用 golang.org/x/crypto (官方维护) |
 | SQLite 并发 | 确认为单用户场景，SQLite 无问题 |
+
+### 2026-04-21 PRD 更新调整
+
+基于 PRD 更新，已做以下架构调整：
+
+| 变更 | 调整 |
+|------|------|
+| 移除歌手/专辑视图 | 简化为单一平铺列表，增加文件夹列 |
+| 移除 Artist/Album 模型 | 从数据模型中删除，Song 模型新增 folder 字段 |
+| 移除 /artists//albums 端点 | 新增 /api/folders 端点用于文件夹筛选 |
+| 简化前端视图 | 移除 artists-view/albums-view，保留单一 songs-view |
+
+### Architecture Update Summary (2026-04-21)
+
+**架构简化成果：**
+- 减少 2 个数据模型（Artist、Album）
+- 减少 4 个 Handler 文件（artist.go、album.go 各 2 个）
+- 减少 2 个前端视图组件
+- 简化 API 设计，更聚焦核心功能
+
+**保持不变的核心功能：
+- 音乐扫描与导入 ✅
+- 播放器与现场编辑 ✅
+- 批量编辑与撤销 ✅
+- 在线歌词搜索 ✅
 
 ### Coherence Validation ✅
 

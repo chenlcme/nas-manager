@@ -1,5 +1,5 @@
-# generated: 2026-04-16T00:12:00Z
-# last_updated: 2026-04-15T14:30:00Z
+# generated: 2026-04-21T00:00:00Z
+# last_updated: 2026-04-21T00:00:00Z
 # project: nas-manager
 # project_key: NOKEY
 # tracking_system: file-system
@@ -34,8 +34,8 @@
 # - Developer typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-04-16T00:12:00Z
-last_updated: 2026-04-16T14:30:00Z
+generated: 2026-04-21T00:00:00Z
+last_updated: 2026-04-21T00:00:00Z
 project: nas-manager
 project_key: NOKEY
 tracking_system: file-system
@@ -51,20 +51,19 @@ development_status:
   1-5-id3-tag-parsing: done
   1-6-incremental-scan-and-full-scan: done
   1-7-orphan-record-cleanup-and-scan-exception-handling: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
-  # Epic 2: 音乐库浏览与搜索
+  # Epic 2: 音乐库浏览与搜索（已更新为单一平铺列表）
   epic-2: done
-  2-1-artist-view-browse: done
-  2-2-album-view-browse: done
-  2-3-folder-view-browse: done
-  2-4-song-list-sorting: done
-  2-5-view-song-details: done
-  2-6-multi-select-songs: done
-  2-7-delete-selected-music: done
-  2-8-search-by-filename: done
-  2-9-search-by-tag-content: done
-  epic-2-retrospective: optional
+  2-1-single-flat-list-browse: done
+  2-2-filter-songs-by-folder: done
+  2-3-song-list-sorting: done
+  2-4-view-song-details: done
+  2-5-multi-select-songs: done
+  2-6-delete-selected-music: done
+  2-7-search-by-filename: done
+  2-8-search-by-tag-content: done
+  epic-2-retrospective: done
 
   # Epic 3: 播放器与现场编辑
   epic-3: done
@@ -74,7 +73,7 @@ development_status:
   3-3-display-lyrics: done
   3-4-display-play-time: done
   3-5-edit-metadata-during-playback: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   # Epic 4: 批量编辑与撤销
   epic-4: done
@@ -82,4 +81,8 @@ development_status:
   4-2-batch-modify-cover: done
   4-3-search-and-batch-apply-lyrics: done
   4-4-undo-batch-editing: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
+
+# 2026-04-21 更新说明：
+# - Epic 2 Story 编号更新（原 2.1-2.3 歌手/专辑/文件夹视图合并为新的 2.1-2.2）
+# - 所有 Epic 标记为已完成状态

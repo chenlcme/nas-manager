@@ -170,6 +170,7 @@ func (s *ScannerService) ScanFiles(rootDir string, mode ScanMode) (*ScanResult, 
 			// 新文件：创建记录并解析 ID3
 			song := &model.Song{
 				FilePath: filePath,
+				Folder:   s.extractFolder(filePath, rootDir),
 			}
 			if err := s.songRepo.Create(song); err != nil {
 				result.Errors = append(result.Errors, "创建记录失败: "+filePath)
@@ -228,4 +229,23 @@ func (s *ScannerService) CleanupOrphanRecords() (*CleanupResult, error) {
 	}
 
 	return result, nil
+}
+
+// extractFolder - 从文件路径提取文件夹路径（相对于根目录）
+func (s *ScannerService) extractFolder(filePath, rootDir string) string {
+	// 获取文件的目录
+	dir := filepath.Dir(filePath)
+
+	// 如果文件就在根目录下，返回空字符串或 "."
+	if dir == rootDir {
+		return ""
+	}
+
+	// 返回相对于根目录的路径
+	relPath, err := filepath.Rel(rootDir, dir)
+	if err != nil {
+		return dir // 如果计算失败，返回完整目录
+	}
+
+	return relPath
 }

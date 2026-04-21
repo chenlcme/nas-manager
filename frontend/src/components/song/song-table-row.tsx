@@ -5,6 +5,7 @@ interface SongTableRowProps {
   song: Song;
   onPlay: (song: Song) => void;
   onShowDetail?: (song: Song) => void;
+  onFolderClick?: (folder: string) => void; // 点击文件夹列筛选
   showPath?: boolean; // 显示完整文件路径（用于文件夹视图）
   showDir?: boolean; // 显示相对目录（用于歌曲列表视图）
   highlightedText?: string | preact.JSX.Element; // 高亮文本（用于搜索结果）
@@ -18,10 +19,13 @@ function formatDuration(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function SongTableRow({ song, onPlay, onShowDetail, showPath, showDir, highlightedText, playingSongId }: SongTableRowProps) {
+export function SongTableRow({ song, onPlay, onShowDetail, onFolderClick, showPath, showDir, highlightedText, playingSongId }: SongTableRowProps) {
   const { isSelected, toggle } = useSelection();
   const selected = isSelected(song.id);
   const isPlaying = playingSongId === song.id;
+
+  // 获取文件夹显示文本
+  const folderDisplay = song.folder || '/';
 
   return (
     <tr
@@ -90,14 +94,14 @@ export function SongTableRow({ song, onPlay, onShowDetail, showPath, showDir, hi
         </td>
       )}
 
-      {/* 所属目录 (用于歌曲列表视图，显示相对路径) */}
+      {/* 所属目录 (用于歌曲列表视图，显示相对路径，可点击筛选) */}
       {showDir && (
-        <td class="px-2 py-2 text-sm text-gray-400 truncate max-w-[150px]" title={song.filePath}>
-          {(() => {
-            const parts = song.filePath.split('/');
-            parts.pop(); // 移除文件名
-            return parts.join('/') || '/';
-          })()}
+        <td
+          class="px-2 py-2 text-sm truncate max-w-[150px] cursor-pointer hover:text-green-600 hover:underline"
+          title={song.filePath}
+          onClick={() => onFolderClick && onFolderClick(folderDisplay)}
+        >
+          <span class="text-gray-400">{folderDisplay}</span>
         </td>
       )}
 

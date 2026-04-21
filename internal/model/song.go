@@ -8,6 +8,7 @@ import (
 type Song struct {
 	ID        uint      `gorm:"primaryKey"`
 	FilePath  string    `gorm:"uniqueIndex;not null"`
+	Folder    string    `gorm:"index"` // 文件夹路径，用于分组浏览
 	Title     string
 	Artist    string
 	Album     string

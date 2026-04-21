@@ -79,17 +79,26 @@ func (h *SongHandler) GetSong(c *gin.Context) {
 	response.Success(c, song)
 }
 
-// GetAllSongs - 获取所有歌曲（支持排序）
-// GET /api/songs?sort_by=title&order=asc
+// GetAllSongs - 获取所有歌曲（支持排序和筛选）
+// GET /api/songs?sort_by=title&order=asc&folder=path/to/folder
 func (h *SongHandler) GetAllSongs(c *gin.Context) {
 	start := time.Now()
 
 	sortBy := c.DefaultQuery("sort_by", "title")
 	order := c.DefaultQuery("order", "asc")
+	folder := c.Query("folder")
 
-	log.Printf("[SongHandler] GetAllSongs sort_by=%s order=%s", sortBy, order)
+	log.Printf("[SongHandler] GetAllSongs sort_by=%s order=%s folder=%s", sortBy, order, folder)
 
-	songs, err := h.songRepo.GetAllSorted(sortBy, order)
+	var songs []model.Song
+	var err error
+
+	if folder != "" {
+		songs, err = h.songRepo.GetAllSortedWithFolder(folder, sortBy, order)
+	} else {
+		songs, err = h.songRepo.GetAllSorted(sortBy, order)
+	}
+
 	if err != nil {
 		log.Printf("[SongHandler] GetAllSongs DB error: %v", err)
 		response.Error(c, http.StatusInternalServerError, "DB_ERROR", "数据库错误")
