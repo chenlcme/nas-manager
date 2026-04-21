@@ -79,6 +79,27 @@ func (h *SongHandler) GetSong(c *gin.Context) {
 	response.Success(c, song)
 }
 
+// GetAllSongs - 获取所有歌曲（支持排序）
+// GET /api/songs?sort_by=title&order=asc
+func (h *SongHandler) GetAllSongs(c *gin.Context) {
+	start := time.Now()
+
+	sortBy := c.DefaultQuery("sort_by", "title")
+	order := c.DefaultQuery("order", "asc")
+
+	log.Printf("[SongHandler] GetAllSongs sort_by=%s order=%s", sortBy, order)
+
+	songs, err := h.songRepo.GetAllSorted(sortBy, order)
+	if err != nil {
+		log.Printf("[SongHandler] GetAllSongs DB error: %v", err)
+		response.Error(c, http.StatusInternalServerError, "DB_ERROR", "数据库错误")
+		return
+	}
+
+	log.Printf("[SongHandler] GetAllSongs found=%d duration=%v", len(songs), time.Since(start))
+	response.Success(c, songs)
+}
+
 // GetSongs - 批量获取歌曲详情
 // POST /api/songs/batch-get
 func (h *SongHandler) GetSongs(c *gin.Context) {

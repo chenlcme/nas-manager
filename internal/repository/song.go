@@ -50,6 +50,32 @@ func (r *SongRepository) GetAll() ([]model.Song, error) {
 	return songs, nil
 }
 
+// GetAllSorted - 获取所有歌曲并排序
+func (r *SongRepository) GetAllSorted(sortBy, order string) ([]model.Song, error) {
+	var songs []model.Song
+
+	// Validate sort field
+	validSortFields := map[string]bool{
+		"title":      true,
+		"duration":   true,
+		"created_at": true,
+	}
+	if !validSortFields[sortBy] {
+		sortBy = "title"
+	}
+
+	// Validate order
+	if order != "asc" && order != "desc" {
+		order = "asc"
+	}
+
+	db := r.db.Order(sortBy + " " + order)
+	if err := db.Find(&songs).Error; err != nil {
+		return nil, err
+	}
+	return songs, nil
+}
+
 // GetByID - 根据ID获取歌曲
 func (r *SongRepository) GetByID(id uint) (*model.Song, error) {
 	var song model.Song

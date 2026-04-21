@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"os/user"
@@ -103,11 +105,56 @@ func main() {
 
 	// Determine frontend dist directory
 	if frontendDistDir == "" {
-		frontendDistDir = filepath.Join(".", "frontend", "dist")
+		frontendDistDir = "frontend/dist"
 	}
 
-	// Serve frontend static files
-	if _, err := os.Stat(frontendDistDir); err == nil {
+	// Serve frontend static files from embedded filesystem
+	if frontendDistDir == "frontend/dist" {
+		// Helper to serve embedded files
+		serveEmbed := func(c *gin.Context, filePath string) {
+			file, err := Frontend.Open(filePath)
+			if err != nil {
+				c.File(filepath.Join(frontendDistDir, filePath))
+				return
+			}
+			content, err := io.ReadAll(file)
+			if err != nil {
+				c.File(filepath.Join(frontendDistDir, filePath))
+				return
+			}
+			ext := filepath.Ext(filePath)
+			contentType := mime.TypeByExtension(ext)
+			if contentType == "" {
+				contentType = "application/octet-stream"
+			}
+			c.Data(http.StatusOK, contentType, content)
+		}
+
+		r.GET("/", func(c *gin.Context) {
+			serveEmbed(c, "dist/index.html")
+		})
+		r.GET("/assets/*filepath", func(c *gin.Context) {
+			filePath := "dist/assets" + c.Param("filepath")
+			serveEmbed(c, filePath)
+		})
+
+		// SPA fallback: serve index.html for non-API routes
+		r.NoRoute(func(c *gin.Context) {
+			path := c.Request.URL.Path
+			if !strings.HasPrefix(path, "/api") {
+				// Check if request is for a static file
+				if strings.HasSuffix(path, ".js") || strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".ico") || strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".jpg") || strings.HasSuffix(path, ".svg") {
+					serveEmbed(c, filepath.Join("dist", path))
+					return
+				}
+				// Otherwise serve index.html for SPA routing
+				serveEmbed(c, "dist/index.html")
+			} else {
+				response.Error(c, http.StatusNotFound, "NOT_FOUND", "请求的接口不存在")
+			}
+		})
+	} else if _, err := os.Stat(frontendDistDir); err == nil {
+		// Fallback to filesystem for custom frontend dist path
 		r.GET("/", func(c *gin.Context) {
 			c.File(filepath.Join(frontendDistDir, "index.html"))
 		})
@@ -159,6 +206,7 @@ func main() {
 		api.GET("/folders/:id/songs", folderHandler.GetFolderSongs)
 
 		// Song routes
+		api.GET("/songs", songHandler.GetAllSongs)
 		api.GET("/songs/search", songHandler.SearchSongs)
 		api.GET("/songs/search/by-tag", songHandler.SearchSongsByTag)
 		api.GET("/songs/:id", songHandler.GetSong)

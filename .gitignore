@@ -9,6 +9,7 @@ nas-manager-*
 
 # Test binary
 *.test
+test-data/
 
 # Output of go coverage
 *.out
